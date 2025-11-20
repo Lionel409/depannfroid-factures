@@ -1,0 +1,12 @@
+{
+  "name": "depannfroid-factures",
+  "version": "1.0.0",
+  "description": "Système de gestion factures DEPANN'FROID",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000"
+  },
+  "keywords": ["factures", "polynésie", "frigoriste"],
+  "author": "DEPANN'FROID",
+  "license": "MIT"
+}
