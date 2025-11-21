@@ -705,12 +705,46 @@ const supprimerFacture = (id) => {
                     )}
                 </div>
                 
-                {facturesEnregistrees.length > 0 && (
-                    <div className="p-3 bg-slate-50 border-t border-slate-200 text-center">
-                        <p className="text-xs text-slate-500">
-                            {facturesEnregistrees.filter(f => f.statut === 'payee').length} payée(s) / {facturesEnregistrees.length} total
-                        </p>
-                    </div>
+               {facturesEnregistrees.length > 0 && (
+    <div className="p-3 bg-slate-50 border-t border-slate-200">
+        <p className="text-xs text-slate-500 text-center mb-3">
+            {facturesEnregistrees.filter(f => f.statut === 'payee').length} payée(s) / {facturesEnregistrees.length} total
+        </p>
+        
+        <div className="flex gap-2">
+            <button
+                onClick={() => {
+                    if (confirm('🧹 Supprimer toutes les factures marquées comme payées ?')) {
+                        const updated = facturesEnregistrees.filter(f => f.statut !== 'payee');
+                        setFacturesEnregistrees(updated);
+                        localStorage.setItem('depannfroid_factures', JSON.stringify(updated));
+                    }
+                }}
+                className="flex-1 py-2 px-3 bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-300 transition group relative"
+            >
+                🧹 Supprimer payées
+                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
+                    Efface les factures réglées, garde les impayées
+                </span>
+            </button>
+            
+            <button
+                onClick={() => {
+                    if (confirm('🔄 ATTENTION : Supprimer TOUT le suivi des factures ?\n\nCette action est irréversible !')) {
+                        setFacturesEnregistrees([]);
+                        localStorage.removeItem('depannfroid_factures');
+                    }
+                }}
+                className="flex-1 py-2 px-3 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200 transition group relative"
+            >
+                🔄 Tout réinitialiser
+                <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap pointer-events-none">
+                    Reset complet (tests, nouvelle année)
+                </span>
+            </button>
+        </div>
+    </div>
+)}
                 )}
             </div>
         )}
