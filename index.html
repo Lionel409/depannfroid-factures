@@ -581,7 +581,7 @@ const envoyerEmailDevis = async () => {
                     {/* Navigation */}
                     <div className="bg-white rounded-2xl shadow-xl p-2 mb-8 no-print">
                         <div className="flex gap-2">
-                            {['devis', 'facture', 'lettreAR', 'signature', 'cgv'].map(tab => (
+                            {['devis', 'facture', 'rappel', 'lettreAR', 'signature', 'cgv'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -593,6 +593,7 @@ const envoyerEmailDevis = async () => {
                                 >
                                     {tab === 'devis' && '📋 Devis'}
                                     {tab === 'facture' && '📄 Facture'}
+                                    {tab === 'rappel' && '📧 Rappel'}
                                     {tab === 'lettreAR' && '✉️ Lettres AR'}
                                     {tab === 'signature' && '✍️ Signature'}
                                     {tab === 'cgv' && '📋 CGV'}
@@ -1265,6 +1266,153 @@ const envoyerEmailDevis = async () => {
                             </div>
                         )}
 
+                        {/* RAPPEL EMAIL */}
+{activeTab === 'rappel' && (
+    <div className="space-y-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
+            <h2 className="text-2xl font-bold text-slate-800 mb-4">📧 Rappel de Paiement (Email Amical)</h2>
+            <p className="text-sm text-slate-600 mb-6">
+                💡 Email de rappel courtois à envoyer quelques jours après l'échéance, AVANT les relances AR formelles.
+            </p>
+            
+            <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">N° Facture</label>
+                    <input
+                        type="text"
+                        value={lettreARData.numeroFacture}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, numeroFacture: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                        placeholder="FACT-2025-001"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date facture</label>
+                    <input
+                        type="date"
+                        value={lettreARData.dateFacture}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, dateFacture: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Nom du client</label>
+                    <input
+                        type="text"
+                        value={lettreARData.clientNom}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, clientNom: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                        placeholder="Restaurant Le Tropical"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Email client</label>
+                    <input
+                        type="email"
+                        value={formData.clientEmail}
+                        onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                        placeholder="contact@restaurant.pf"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Montant dû (XPF)</label>
+                    <input
+                        type="number"
+                        value={lettreARData.montantDu}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, montantDu: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                        placeholder="150000"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date d'échéance</label>
+                    <input
+                        type="date"
+                        value={lettreARData.dateEcheance}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, dateEcheance: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                    />
+                </div>
+            </div>
+
+            <button
+                onClick={() => {
+                    if (!formData.clientEmail) {
+                        alert('❌ Veuillez saisir un email client !');
+                        return;
+                    }
+                    alert('📧 Email de rappel envoyé avec succès !\n\n(Pour l\'instant simulation uniquement - intégration Google Apps Script à venir)');
+                }}
+                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
+            >
+                📧 Envoyer le rappel par email
+            </button>
+        </div>
+
+        {/* Aperçu Email */}
+        <div className="bg-white rounded-xl p-8 shadow-xl">
+            <div className="max-w-3xl mx-auto border-2 border-slate-200 rounded-lg p-6">
+                <div className="mb-8 border-b-2 border-blue-600 pb-4">
+                    <h2 className="text-2xl font-bold text-blue-600">DEPANN'FROID</h2>
+                    <p className="text-sm text-slate-600">Installation & Maintenance Froid Commercial</p>
+                    <p className="text-sm text-slate-600">📞 87 70 64 75 | 📧 depannfroid@mail.pf</p>
+                </div>
+
+                <div className="mb-6">
+                    <p className="font-semibold text-slate-800">{lettreARData.clientNom || 'Nom du client'}</p>
+                    <p className="text-sm text-slate-500 mt-2">Objet : Rappel facture n°{lettreARData.numeroFacture || '---'}</p>
+                </div>
+
+                <div className="space-y-4 text-justify text-slate-700">
+                    <p>Bonjour,</p>
+                    
+                    <p>
+                        Nous vous remercions pour votre confiance et espérons que nos services vous ont donné 
+                        entière satisfaction.
+                    </p>
+                    
+                    <p>
+                        Nous constatons que la facture <strong>n°{lettreARData.numeroFacture || '---'}</strong> d'un montant 
+                        de <strong className="text-blue-600">{(parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR')} XPF</strong>, émise 
+                        le {lettreARData.dateFacture || '---'} et échue le {lettreARData.dateEcheance || '---'}, 
+                        n'a pas encore été réglée.
+                    </p>
+                    
+                    <p>
+                        Il s'agit peut-être d'un simple oubli de votre part. Si c'est le cas, nous vous remercions 
+                        de bien vouloir procéder au règlement dans les meilleurs délais.
+                    </p>
+                    
+                    <div className="bg-blue-50 border-l-4 border-blue-600 p-4 my-6 rounded">
+                        <p className="font-semibold text-blue-900">💰 Montant à régler : {(parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR')} XPF</p>
+                        <p className="text-sm text-blue-800 mt-2">
+                            <strong>Mode de paiement :</strong> Virement bancaire, chèque ou espèces
+                        </p>
+                    </div>
+                    
+                    <p>
+                        Si vous avez déjà effectué ce règlement, veuillez ne pas tenir compte de ce message 
+                        et nous en excuser.
+                    </p>
+                    
+                    <p>
+                        Pour toute question ou si vous rencontrez des difficultés, n'hésitez pas à nous contacter 
+                        au <strong>87 70 64 75</strong>.
+                    </p>
+                    
+                    <p className="mt-6">Cordialement,</p>
+                    <p className="font-semibold text-slate-800">L'équipe DEPANN'FROID</p>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-200 text-center text-sm text-slate-500">
+                    <p>DEPANN'FROID - Installation & Maintenance Froid Commercial</p>
+                    <p>📞 87 70 64 75 | 📧 depannfroid@mail.pf | 📍 Moorea, Polynésie française</p>
+                </div>
+            </div>
+        </div>
+    </div>
+)}
                         {/* LETTRES AR - Inchangé */}
                         {activeTab === 'lettreAR' && (
                             <div className="space-y-6">
