@@ -123,6 +123,84 @@
         size: A4;
         margin: 0;
     }
+       /* ========================================
+       OPTIMISATION SPÉCIFIQUE FACTURE
+       ======================================== */
+    
+    #facture-content {
+        min-height: 270mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    
+    #facture-content .border-4 {
+        flex: 1 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+    }
+    
+    /* En-tête facture plus espacé */
+    #facture-content h2 {
+        font-size: 28px !important;
+        margin-bottom: 8px !important;
+    }
+    
+    /* Infos client plus aérées */
+    #facture-content .bg-slate-50 {
+        padding: 14px !important;
+        margin-bottom: 16px !important;
+    }
+    
+    /* Tableau facture avec plus d'espace */
+    #facture-content table {
+        margin: 16px 0 !important;
+    }
+    
+    #facture-content th {
+        padding: 10px 8px !important;
+        font-size: 12px !important;
+    }
+    
+    #facture-content td {
+        padding: 8px !important;
+        font-size: 11px !important;
+    }
+    
+    /* Section totaux facture plus grande */
+    #facture-content .totaux {
+        padding: 16px !important;
+        margin: 16px 0 !important;
+    }
+    
+    #facture-content .totaux > div {
+        padding: 5px 0 !important;
+        font-size: 13px !important;
+    }
+    
+    /* Total TTC facture bien visible */
+    #facture-content .bg-blue-600 {
+        padding: 12px !important;
+        font-size: 18px !important;
+    }
+    
+    /* Reste à payer bien visible */
+    #facture-content .bg-green-600 {
+        padding: 12px !important;
+        font-size: 18px !important;
+    }
+    
+    /* Footer facture espacé */
+    #facture-content .border-t-2 {
+        padding: 14px 0 !important;
+        margin-top: 20px !important;
+    }
+    
+    #facture-content .border-t-2 p {
+        margin: 6px 0 !important;
+        line-height: 1.5 !important;
+    }
+}
 }
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
