@@ -251,31 +251,7 @@
         page-break-before: auto !important;
     }
     
-    /* Message "Suite page suivante" - affiché seulement si débordement */
-    .page-break-notice {
-        display: block !important;
-        text-align: center;
-        padding: 10px;
-        margin: 10px 0;
-        background: #eff6ff;
-        border: 2px dashed #2563eb;
-        border-radius: 8px;
-        font-weight: bold;
-        color: #1e40af;
-        page-break-after: always !important;
-    }
-    
-    /* Continuer l'encadré sur page 2 */
-    .page-2-header {
-        display: block !important;
-        margin-top: 0 !important;
-        padding: 12px;
-        background: #2563eb;
-        color: white;
-        text-align: center;
-        font-weight: bold;
-        border-radius: 8px 8px 0 0;
-    }
+  
 }
 }
 }
@@ -882,21 +858,7 @@ const envoyerEmailDevis = async () => {
                                                 ))}
                                             </tbody>
                                         </table>
-        
-                                        {/* Message si débordement - visible uniquement à l'impression si nécessaire */}
-                                        <div className="page-break-notice no-print-inline" style={{display: 'none'}}>
-                                            ⬇️ Suite du devis page suivante ⬇️
-                                        </div>
 
-                                            {/* Message si débordement - visible uniquement à l'impression si nécessaire */}
-                                            <div className="page-break-notice no-print-inline" style={{display: 'none'}}>
-                                                ⬇️ Suite du devis page suivante ⬇️
-                                            </div>
-
-                                        {/* En-tête page 2 si le document est long */}
-                                        <div className="page-2-header" style={{display: 'none'}}>
-                                            📄 Suite du devis N° {devisData.numeroDevis || '---'} - Page 2
-                                        </div>
                                         {/* Totaux avec double TVA */}
                                         <div className="flex justify-end mb-8">
                                             <div className="w-96">
@@ -1221,16 +1183,7 @@ const envoyerEmailDevis = async () => {
                                                 ))}
                                             </tbody>
                                         </table>
-
-                                        {/* Message si débordement - visible uniquement à l'impression si nécessaire */}
-                                        <div className="page-break-notice no-print-inline" style={{display: 'none'}}>
-                                            ⬇️ Suite de la facture page suivante ⬇️
-                                        </div>
-
-                                        {/* En-tête page 2 si le document est long */}
-                                        <div className="page-2-header" style={{display: 'none'}}>
-                                            📄 Suite de la facture N° {formData.numeroFacture || '---'} - Page 2
-                                        </div>
+                                        
                                         {/* Totaux avec double TVA */}
                                         <div className="flex justify-end mb-8">
                                             <div className="w-96">
