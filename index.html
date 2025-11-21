@@ -50,7 +50,7 @@
                 prestations: [{ description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }],
                 montantTotal: 0,
                 accompte: 0,
-                conditions: 'Devis valable 30 jours. Paiement : 30% à la commande, 70% à la livraison.'
+               conditions: 'Devis valable 30 jours. Paiement : 30% à la commande, 70% à la livraison.\n\nEn cas de retard de paiement : pénalités de 18% annuel (soit 1,5% par mois) + indemnité forfaitaire de 4 800 XPF.'
             });
 
             // État pour Facture
@@ -1000,6 +1000,9 @@ const envoyerEmailDevis = async () => {
                                             <p className="text-sm text-slate-600 mb-2">
                                                 <strong>Mode de règlement:</strong> Virement bancaire, chèque ou espèces
                                             </p>
+                                            <p className="text-sm text-slate-600 mb-2">
+                                                <strong>Pénalités de retard:</strong> 18% annuel (soit 1,5% par mois) + Indemnité forfaitaire de 4 800 XPF
+                                            </p>
                                             <p className="text-xs text-slate-500 mt-4 italic">
                                                 Merci de votre confiance. Pour toute question, contactez-nous au 87 70 64 75
                                             </p>
@@ -1244,8 +1247,8 @@ const envoyerEmailDevis = async () => {
                                                     <span className="font-semibold">{(parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR')} XPF</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span>Pénalités (10%) :</span>
-                                                    <span className="font-semibold">{(parseFloat(lettreARData.montantDu) * 0.10).toFixed(0)} XPF</span>
+                                                    <span>Pénalités (18% annuel) :</span>
+                                                    <span className="font-semibold">{(parseFloat(lettreARData.montantDu) * 0.18).toFixed(0)} XPF</span>
                                                 </div>
                                                 <div className="flex justify-between">
                                                     <span>Indemnité :</span>
@@ -1254,7 +1257,7 @@ const envoyerEmailDevis = async () => {
                                                 <div className="flex justify-between pt-3 border-t-2 border-red-400">
                                                     <span className="font-bold text-lg">TOTAL :</span>
                                                     <span className="font-bold text-lg text-red-600">
-                                                        {(parseFloat(lettreARData.montantDu) + parseFloat(lettreARData.montantDu) * 0.10 + 4800).toFixed(0)} XPF
+                                                       {Math.round(parseFloat(lettreARData.montantDu) + parseFloat(lettreARData.montantDu) * 0.18 + 4800).toLocaleString('fr-FR')} XPF
                                                     </span>
                                                 </div>
                                             </div>
