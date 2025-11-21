@@ -33,12 +33,11 @@
         const { useState } = React;
         // ⚙️ CONFIGURATION - REMPLACE PAR TON URL
    const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzm_2gtAGRRspENa-YKZDfAO7UVJEGSsCkOqIvEKJAaXbQfVS1o81euixHNIWX5ZXfwGA/exec';
-   const [isLoading, setIsLoading] = useState(false);
-
 
         function App() {
             const [activeTab, setActiveTab] = useState('devis');
-            
+            const [isLoading, setIsLoading] = useState(false);
+
             // État pour Devis
             const [devisData, setDevisData] = useState({
                 numeroDevis: '',
