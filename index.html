@@ -321,10 +321,14 @@
             });
 
            const [signature, setSignature] = useState(
-                typeof window !== 'undefined' && localStorage.getItem('depannfroid_signature') 
-                    ? localStorage.getItem('depannfroid_signature') 
-                    : ''
-            );
+    typeof window !== 'undefined' && localStorage.getItem('depannfroid_signature')
+        ? localStorage.getItem('depannfroid_signature')
+        : ''
+);
+
+// État pour les factures enregistrées et notifications
+const [facturesEnregistrees, setFacturesEnregistrees] = useState([]);
+const [showNotifications, setShowNotifications] = useState(false);
 
             const handleDevisChange = (e) => {
                 const { name, value } = e.target;
@@ -559,7 +563,161 @@ const envoyerEmailDevis = async () => {
                 calculateTotal();
             }, [formData.prestations, formData.accompte]);
 
+            // Charger les factures enregistrées au démarrage
+            React.useEffect(() => {
+            const saved = localStorage.getItem('depannfroid_factures');
+        if (saved) {
+            setFacturesEnregistrees(JSON.parse(saved));
+        }
+    }, []);
+
+            // Calculer les factures en retard
+const getFacturesEnRetard = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return facturesEnregistrees.filter(f => {
+        if (f.statut === 'payee') return false;
+        const echeance = new Date(f.dateEcheance);
+        echeance.setHours(0, 0, 0, 0);
+        return echeance < today;
+    }).map(f => {
+        const echeance = new Date(f.dateEcheance);
+        const diffTime = today - echeance;
+        const joursRetard = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let niveau = 'warning';
+        if (joursRetard > 30) niveau = 'danger';
+        if (joursRetard > 45) niveau = 'critical';
+        
+        return { ...f, joursRetard, niveau };
+    }).sort((a, b) => b.joursRetard - a.joursRetard);
+};
+
+// Enregistrer une facture pour suivi
+const enregistrerFacture = () => {
+    const totals = calculateTotals();
+    const nouvelleFacture = {
+        id: Date.now(),
+        numeroFacture: formData.numeroFacture,
+        clientNom: formData.clientNom,
+        clientEmail: formData.clientEmail,
+        montantTTC: totals.totalTTC,
+        dateFacture: formData.dateFacture,
+        dateEcheance: new Date(new Date(formData.dateFacture).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        statut: 'impayee'
+    };
+    
+    const updated = [...facturesEnregistrees, nouvelleFacture];
+    setFacturesEnregistrees(updated);
+    localStorage.setItem('depannfroid_factures', JSON.stringify(updated));
+    alert('✅ Facture enregistrée pour suivi !');
+};
+
+// Marquer une facture comme payée
+const marquerPayee = (id) => {
+    const updated = facturesEnregistrees.map(f => 
+        f.id === id ? { ...f, statut: 'payee' } : f
+    );
+    setFacturesEnregistrees(updated);
+    localStorage.setItem('depannfroid_factures', JSON.stringify(updated));
+};
+
+// Supprimer une facture du suivi
+const supprimerFacture = (id) => {
+    const updated = facturesEnregistrees.filter(f => f.id !== id);
+    setFacturesEnregistrees(updated);
+    localStorage.setItem('depannfroid_factures', JSON.stringify(updated));
+};
+
             return (
+                <>
+                {/* 🔔 NOTIFICATIONS FACTURES IMPAYÉES */}
+<div className="fixed top-4 right-4 z-50 no-print">
+    <div className="relative">
+        <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            className="relative bg-white rounded-full p-3 shadow-lg hover:shadow-xl transition border-2 border-slate-200 hover:border-blue-500"
+        >
+            <span className="text-2xl">🔔</span>
+            {getFacturesEnRetard().length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
+                    {getFacturesEnRetard().length}
+                </span>
+            )}
+        </button>
+        
+        {showNotifications && (
+            <div className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border-2 border-slate-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3">
+                    <h3 className="font-bold text-lg">🔔 Factures en retard</h3>
+                    <p className="text-sm opacity-80">{getFacturesEnRetard().length} facture(s) impayée(s)</p>
+                </div>
+                
+                <div className="max-h-80 overflow-y-auto">
+                    {getFacturesEnRetard().length === 0 ? (
+                        <div className="p-6 text-center text-slate-500">
+                            <span className="text-4xl">✅</span>
+                            <p className="mt-2">Aucune facture en retard !</p>
+                        </div>
+                    ) : (
+                        getFacturesEnRetard().map(f => (
+                            <div 
+                                key={f.id} 
+                                className={`p-4 border-b border-slate-100 hover:bg-slate-50 ${
+                                    f.niveau === 'critical' ? 'bg-red-50 border-l-4 border-l-red-600' :
+                                    f.niveau === 'danger' ? 'bg-orange-50 border-l-4 border-l-orange-500' :
+                                    'bg-yellow-50 border-l-4 border-l-yellow-500'
+                                }`}
+                            >
+                                <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                        <p className="font-bold text-slate-800">{f.numeroFacture}</p>
+                                        <p className="text-sm text-slate-600">{f.clientNom}</p>
+                                        <p className="text-sm font-semibold text-blue-600">
+                                            {(f.montantTTC || 0).toLocaleString('fr-FR')} XPF
+                                        </p>
+                                        <p className={`text-xs font-bold mt-1 ${
+                                            f.niveau === 'critical' ? 'text-red-600' :
+                                            f.niveau === 'danger' ? 'text-orange-600' :
+                                            'text-yellow-600'
+                                        }`}>
+                                            ⚠️ {f.joursRetard} jour(s) de retard
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <button
+                                            onClick={() => marquerPayee(f.id)}
+                                            className="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600"
+                                        >
+                                            ✅ Payée
+                                        </button>
+                                        <button
+                                            onClick={() => supprimerFacture(f.id)}
+                                            className="text-xs bg-slate-300 text-slate-700 px-2 py-1 rounded hover:bg-slate-400"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+                
+                {facturesEnregistrees.length > 0 && (
+                    <div className="p-3 bg-slate-50 border-t border-slate-200 text-center">
+                        <p className="text-xs text-slate-500">
+                            {facturesEnregistrees.filter(f => f.statut === 'payee').length} payée(s) / {facturesEnregistrees.length} total
+                        </p>
+                    </div>
+                )}
+            </div>
+        </>
+        )}
+    </div>
+</div>
+                
                 <div className="container mx-auto p-6 max-w-7xl">
                     {/* Header */}
                     <div id="system-header" className="bg-white rounded-2xl shadow-2xl p-8 mb-8">
@@ -1119,6 +1277,12 @@ const envoyerEmailDevis = async () => {
                                             className="flex-1 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
                                         >
                                             📧 Envoyer par Email
+                                        </button>
+                                        <button
+                                            onClick={enregistrerFacture}
+                                            className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:shadow-xl transition mt-3"
+                                        >
+                                            📋 Enregistrer pour suivi des paiements
                                         </button>
                                     </div>
                                 </div>
