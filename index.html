@@ -705,7 +705,7 @@ const supprimerFacture = (id) => {
                     )}
                 </div>
                 
-              {facturesEnregistrees.length > 0 && (
+             {facturesEnregistrees.length > 0 && (
     <div className="p-3 bg-slate-50 border-t border-slate-200">
         <p className="text-xs text-slate-500 text-center mb-3">
             {facturesEnregistrees.filter(f => f.statut === 'payee').length} payée(s) / {facturesEnregistrees.length} total
@@ -744,14 +744,6 @@ const supprimerFacture = (id) => {
         </div>
     </div>
 )}
-
-🧹 Efface les factures réglées, garde les impayées
-🔄 Reset complet (tests, nouvelle année)
-                )}
-            </div>
-        )}
-    </div>
-</div>
                 
                 <div className="container mx-auto p-6 max-w-7xl">
                     {/* Header */}
