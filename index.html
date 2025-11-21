@@ -1337,26 +1337,55 @@ const envoyerEmailDevis = async () => {
             </div>
 
             <button
-                onClick={() => {
-                    if (!lettreARData.clientAdresse) {
-                    alert('❌ Veuillez saisir un email client !');
-                return;
-            }
-                    if (!lettreARData.numeroFacture) {
-                    alert('❌ Veuillez saisir un numéro de facture !');
-                 return;
-            }
-                    if (!lettreARData.montantDu || parseFloat(lettreARData.montantDu) <= 0) {
-                    alert('❌ Veuillez saisir un montant dû valide !');
-                return;
-            }
+    onClick={async () => {
+        if (!lettreARData.clientAdresse) {
+            alert('❌ Veuillez saisir un email client !');
+            return;
+        }
+        if (!lettreARData.numeroFacture) {
+            alert('❌ Veuillez saisir un numéro de facture !');
+            return;
+        }
+        if (!lettreARData.montantDu || parseFloat(lettreARData.montantDu) <= 0) {
+            alert('❌ Veuillez saisir un montant dû valide !');
+            return;
+        }
         
-            alert('✅ Email de rappel envoyé avec succès à ' + lettreARData.clientAdresse + ' !\n\n📧 Contenu :\n- Facture N°' + lettreARData.numeroFacture + '\n- Montant : ' + (parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR') + ' XPF\n\n(Simulation - Intégration Google Apps Script à venir)');
-        }}
-        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
-    >
-        📧 Envoyer le rappel par email
-    </button>
+        if (GOOGLE_SCRIPT_URL === 'COLLE_ICI_TON_URL_GOOGLE_APPS_SCRIPT') {
+            alert('⚠️ URL Google Apps Script non configurée !');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'rappel',
+                    data: {
+                        numeroFacture: lettreARData.numeroFacture,
+                        dateFacture: lettreARData.dateFacture,
+                        dateEcheance: lettreARData.dateEcheance,
+                        clientNom: lettreARData.clientNom,
+                        clientEmail: lettreARData.clientAdresse,
+                        montantDu: lettreARData.montantDu
+                    }
+                })
+            });
+            alert('✅ Email de rappel envoyé avec succès à ' + lettreARData.clientAdresse + ' !');
+        } catch (error) {
+            alert('❌ Erreur lors de l\'envoi. Vérifiez votre connexion.');
+        } finally {
+            setIsLoading(false);
+        }
+    }}
+    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
+>
+    📧 Envoyer le rappel par email
+</button>
             
         </div>
 
