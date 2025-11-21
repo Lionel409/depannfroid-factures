@@ -32,7 +32,25 @@
         const { useState } = React;
 
         function App() {
-            const [activeTab, setActiveTab] = useState('facture');
+            const [activeTab, setActiveTab] = useState('devis');
+            
+            // État pour Devis
+            const [devisData, setDevisData] = useState({
+                numeroDevis: '',
+                dateDevis: new Date().toISOString().split('T')[0],
+                validiteDevis: 30,
+                clientNom: '',
+                clientAdresse: '',
+                clientEmail: '',
+                clientTelephone: '',
+                prestations: [{ description: '', quantite: 1, prixUnitaire: 0 }],
+                tva: 5,
+                montantTotal: 0,
+                accompte: 0,
+                conditions: 'Devis valable 30 jours. Paiement : 30% à la commande, 70% à la livraison.'
+            });
+
+            // État pour Facture
             const [formData, setFormData] = useState({
                 numeroFacture: '',
                 dateFacture: new Date().toISOString().split('T')[0],
@@ -56,10 +74,18 @@
                 montantDu: 0,
                 dateEcheance: '',
                 joursRetard: 0,
-                typLettre: 'relance1'
+                typeLettre: 'relance1'
             });
 
             const [signature, setSignature] = useState('');
+
+            const handleDevisChange = (e) => {
+                const { name, value } = e.target;
+                setDevisData(prev => ({
+                    ...prev,
+                    [name]: value
+                }));
+            };
 
             const handleInputChange = (e) => {
                 const { name, value } = e.target;
@@ -75,6 +101,28 @@
                     ...prev,
                     [name]: value
                 }));
+            };
+
+            const addPrestationDevis = () => {
+                setDevisData(prev => ({
+                    ...prev,
+                    prestations: [...prev.prestations, { description: '', quantite: 1, prixUnitaire: 0 }]
+                }));
+            };
+
+            const removePrestationDevis = (index) => {
+                setDevisData(prev => ({
+                    ...prev,
+                    prestations: prev.prestations.filter((_, i) => i !== index)
+                }));
+            };
+
+            const updatePrestationDevis = (index, field, value) => {
+                setDevisData(prev => {
+                    const newPrestations = [...prev.prestations];
+                    newPrestations[index][field] = value;
+                    return { ...prev, prestations: newPrestations };
+                });
             };
 
             const addPrestation = () => {
@@ -99,6 +147,19 @@
                 });
             };
 
+            const calculateTotalDevis = () => {
+                const subtotal = devisData.prestations.reduce((sum, p) => 
+                    sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
+                );
+                const tvaAmount = subtotal * (parseFloat(devisData.tva) / 100);
+                const total = subtotal + tvaAmount;
+                
+                setDevisData(prev => ({
+                    ...prev,
+                    montantTotal: total.toFixed(0)
+                }));
+            };
+
             const calculateTotal = () => {
                 const subtotal = formData.prestations.reduce((sum, p) => 
                     sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
@@ -112,6 +173,13 @@
                     montantTotal: total.toFixed(0),
                     resteAPayer: resteAPayer.toFixed(0)
                 }));
+            };
+
+            const generatePDFDevis = () => {
+                calculateTotalDevis();
+                setTimeout(() => {
+                    window.print();
+                }, 100);
             };
 
             const generatePDF = () => {
@@ -129,6 +197,10 @@
                 alert('📄 Lettre AR générée avec succès !');
                 window.print();
             };
+
+            React.useEffect(() => {
+                calculateTotalDevis();
+            }, [devisData.prestations, devisData.tva]);
 
             React.useEffect(() => {
                 calculateTotal();
@@ -156,7 +228,7 @@
                     {/* Navigation */}
                     <div className="bg-white rounded-2xl shadow-xl p-2 mb-8 no-print">
                         <div className="flex gap-2">
-                            {['facture', 'lettreAR', 'signature', 'cgv'].map(tab => (
+                            {['devis', 'facture', 'lettreAR', 'signature', 'cgv'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -166,6 +238,7 @@
                                             : 'text-slate-600 hover:bg-slate-100'
                                     }`}
                                 >
+                                    {tab === 'devis' && '📋 Devis'}
                                     {tab === 'facture' && '📄 Facture'}
                                     {tab === 'lettreAR' && '✉️ Lettres AR'}
                                     {tab === 'signature' && '✍️ Signature'}
@@ -177,12 +250,320 @@
 
                     {/* Content */}
                     <div>
+                        {/* DEVIS */}
+                        {activeTab === 'devis' && (
+                            <div className="space-y-6">
+                                {/* Formulaire Devis */}
+                                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-6">📋 Informations du devis</h2>
+                                    
+                                    <div className="grid md:grid-cols-3 gap-4 mb-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">N° Devis</label>
+                                            <input
+                                                type="text"
+                                                name="numeroDevis"
+                                                value={devisData.numeroDevis}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="DEVIS-2025-001"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+                                            <input
+                                                type="date"
+                                                name="dateDevis"
+                                                value={devisData.dateDevis}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Validité (jours)</label>
+                                            <input
+                                                type="number"
+                                                name="validiteDevis"
+                                                value={devisData.validiteDevis}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-xl font-semibold text-slate-800 mb-4">👤 Informations client</h3>
+                                    <div className="grid md:grid-cols-2 gap-4 mb-6">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Nom du client</label>
+                                            <input
+                                                type="text"
+                                                name="clientNom"
+                                                value={devisData.clientNom}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="Restaurant Le Tropical"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                                            <input
+                                                type="text"
+                                                name="clientAdresse"
+                                                value={devisData.clientAdresse}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="BP 123, Papeete"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                                            <input
+                                                type="email"
+                                                name="clientEmail"
+                                                value={devisData.clientEmail}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="contact@restaurant.pf"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                                            <input
+                                                type="tel"
+                                                name="clientTelephone"
+                                                value={devisData.clientTelephone}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="87 12 34 56"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
+                                    {devisData.prestations.map((prestation, index) => (
+                                        <div key={index} className="grid md:grid-cols-4 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                                                <input
+                                                    type="text"
+                                                    value={prestation.description}
+                                                    onChange={(e) => updatePrestationDevis(index, 'description', e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                                                    placeholder="Installation chambre froide positive"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Quantité</label>
+                                                <input
+                                                    type="number"
+                                                    value={prestation.quantite}
+                                                    onChange={(e) => updatePrestationDevis(index, 'quantite', e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2 items-end">
+                                                <div className="flex-1">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Prix unitaire (XPF)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={prestation.prixUnitaire}
+                                                        onChange={(e) => updatePrestationDevis(index, 'prixUnitaire', e.target.value)}
+                                                        className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                {devisData.prestations.length > 1 && (
+                                                    <button
+                                                        onClick={() => removePrestationDevis(index)}
+                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    
+                                    <button
+                                        onClick={addPrestationDevis}
+                                        className="mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-semibold hover:shadow-lg transition"
+                                    >
+                                        ➕ Ajouter une prestation
+                                    </button>
+
+                                    <div className="mt-6 grid md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">TVA (%)</label>
+                                            <input
+                                                type="number"
+                                                name="tva"
+                                                value={devisData.tva}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Accompte demandé (XPF)</label>
+                                            <input
+                                                type="number"
+                                                name="accompte"
+                                                value={devisData.accompte}
+                                                onChange={handleDevisChange}
+                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6">
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Conditions particulières</label>
+                                        <textarea
+                                            name="conditions"
+                                            value={devisData.conditions}
+                                            onChange={handleDevisChange}
+                                            rows="3"
+                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                        />
+                                    </div>
+
+                                    <div className="mt-8 flex gap-4">
+                                        <button
+                                            onClick={generatePDFDevis}
+                                            className="flex-1 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
+                                        >
+                                            🖨️ Générer PDF
+                                        </button>
+                                        <button
+                                            onClick={envoyerEmail}
+                                            className="flex-1 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
+                                        >
+                                            📧 Envoyer par Email
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Aperçu Devis */}
+                                <div className="bg-white rounded-xl p-8 shadow-xl" id="devis-content">
+                                    <div className="border-4 border-blue-600 rounded-xl p-8">
+                                        {/* En-tête */}
+                                        <div className="flex justify-between items-start mb-8">
+                                            <div>
+                                                <h1 className="text-4xl font-bold text-blue-600 mb-2">DEPANN'FROID</h1>
+                                                <p className="text-slate-600">Installation & Maintenance Froid Commercial</p>
+                                                <p className="text-sm text-slate-500 mt-2">📞 87 70 64 75</p>
+                                                <p className="text-sm text-slate-500">📧 depannfroidmoorea@gmail.com</p>
+                                                <p className="text-sm text-slate-500">📍 Moorea, Polynésie française</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <h2 className="text-3xl font-bold text-blue-600 mb-2">DEVIS</h2>
+                                                <p className="text-slate-600">N° {devisData.numeroDevis || '---'}</p>
+                                                <p className="text-slate-600">Date: {devisData.dateDevis || '---'}</p>
+                                                <p className="text-sm text-orange-600 font-semibold mt-2">
+                                                    Valable {devisData.validiteDevis} jours
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Infos client */}
+                                        <div className="bg-slate-50 rounded-lg p-6 mb-8">
+                                            <h3 className="font-bold text-slate-800 mb-3">CLIENT:</h3>
+                                            <p className="font-semibold text-lg">{devisData.clientNom || '---'}</p>
+                                            <p className="text-slate-600">{devisData.clientAdresse || '---'}</p>
+                                            <p className="text-slate-600">{devisData.clientEmail || '---'}</p>
+                                            <p className="text-slate-600">{devisData.clientTelephone || '---'}</p>
+                                        </div>
+
+                                        {/* Tableau prestations */}
+                                        <table className="w-full mb-8">
+                                            <thead>
+                                                <tr className="bg-blue-600 text-white">
+                                                    <th className="text-left p-4 rounded-tl-lg">Description</th>
+                                                    <th className="text-center p-4">Qté</th>
+                                                    <th className="text-right p-4">P.U. (XPF)</th>
+                                                    <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {devisData.prestations.map((prestation, index) => (
+                                                    <tr key={index} className="border-b border-slate-200">
+                                                        <td className="p-4">{prestation.description || '---'}</td>
+                                                        <td className="text-center p-4">{prestation.quantite}</td>
+                                                        <td className="text-right p-4">{(parseFloat(prestation.prixUnitaire) || 0).toLocaleString('fr-FR')}</td>
+                                                        <td className="text-right p-4 font-semibold">
+                                                            {((parseFloat(prestation.quantite) || 0) * (parseFloat(prestation.prixUnitaire) || 0)).toLocaleString('fr-FR')}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+
+                                        {/* Totaux */}
+                                        <div className="flex justify-end mb-8">
+                                            <div className="w-80">
+                                                <div className="flex justify-between py-2 border-b border-slate-200">
+                                                    <span className="text-slate-600">Sous-total HT:</span>
+                                                    <span className="font-semibold">
+                                                        {(devisData.prestations.reduce((sum, p) => 
+                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
+                                                        )).toLocaleString('fr-FR')} XPF
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between py-2 border-b border-slate-200">
+                                                    <span className="text-slate-600">TVA ({devisData.tva}%):</span>
+                                                    <span className="font-semibold">
+                                                        {(devisData.prestations.reduce((sum, p) => 
+                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
+                                                        ) * (parseFloat(devisData.tva) / 100)).toLocaleString('fr-FR')} XPF
+                                                    </span>
+                                                </div>
+                                                <div className="flex justify-between py-3 bg-blue-600 text-white px-4 rounded-lg mt-2">
+                                                    <span className="font-bold text-lg">TOTAL TTC:</span>
+                                                    <span className="font-bold text-xl">{(parseFloat(devisData.montantTotal) || 0).toLocaleString('fr-FR')} XPF</span>
+                                                </div>
+                                                {parseFloat(devisData.accompte) > 0 && (
+                                                    <div className="flex justify-between py-2 bg-orange-100 px-4 rounded-lg mt-2">
+                                                        <span className="font-semibold text-orange-800">Accompte demandé:</span>
+                                                        <span className="font-bold text-orange-800">{(parseFloat(devisData.accompte) || 0).toLocaleString('fr-FR')} XPF</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Conditions */}
+                                        <div className="bg-blue-50 rounded-lg p-6 mb-6">
+                                            <h3 className="font-bold text-slate-800 mb-3">CONDITIONS:</h3>
+                                            <p className="text-slate-700 whitespace-pre-line">{devisData.conditions}</p>
+                                        </div>
+
+                                        {/* Signature client */}
+                                        <div className="border-t-2 border-slate-200 pt-6">
+                                            <div className="grid md:grid-cols-2 gap-8">
+                                                <div>
+                                                    <p className="font-semibold mb-2">Bon pour accord :</p>
+                                                    <p className="text-sm text-slate-600 mb-4">Lu et approuvé</p>
+                                                    <div className="border-b-2 border-slate-300 h-20"></div>
+                                                    <p className="text-sm text-slate-600 mt-2">Date et signature du client</p>
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold mb-2">DEPANN'FROID</p>
+                                                    <div className="border-b-2 border-slate-300 h-20 mt-8"></div>
+                                                    <p className="text-sm text-slate-600 mt-2">Signature</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-6 italic">
+                                                Ce devis est valable {devisData.validiteDevis} jours. Pour toute question, contactez-nous au 87 70 64 75
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* FACTURE */}
                         {activeTab === 'facture' && (
                             <div className="space-y-6">
                                 {/* Formulaire */}
                                 <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
-                                    <h2 className="text-2xl font-bold text-slate-800 mb-6">📝 Informations de la facture</h2>
+                                    <h2 className="text-2xl font-bold text-slate-800 mb-6">📄 Informations de la facture</h2>
                                     
                                     <div className="grid md:grid-cols-3 gap-4 mb-6">
                                         <div>
@@ -354,7 +735,7 @@
                                         <div className="flex justify-between items-start mb-8">
                                             <div>
                                                 <h1 className="text-4xl font-bold text-blue-600 mb-2">DEPANN'FROID</h1>
-                                                <p className="text-slate-600">Dépannage, Installation & Maintenance Froid Commercial - Climatisation</p>
+                                                <p className="text-slate-600">Installation & Maintenance Froid Commercial</p>
                                                 <p className="text-sm text-slate-500 mt-2">📞 87 70 64 75</p>
                                                 <p className="text-sm text-slate-500">📧 depannfroidmoorea@gmail.com</p>
                                                 <p className="text-sm text-slate-500">📍 Moorea, Polynésie française</p>
@@ -695,7 +1076,7 @@
                                                     <span className="font-semibold">{(parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR')} XPF</span>
                                                 </div>
                                                 <div className="flex justify-between">
-                                                    <span>Pénalités :</span>
+                                                    <span>Pénalités (10%) :</span>
                                                     <span className="font-semibold">{(parseFloat(lettreARData.montantDu) * 0.10).toFixed(0)} XPF</span>
                                                 </div>
                                                 <div className="flex justify-between">
