@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DEPANN'FROID - Factures Devis Relances</title>
-    <meta name="description" content="Système de gestion de factures pour DEPANN'FROID">
+    <title>DEPANN'FROID - Factures Devis Relances Pro</title>
+    <meta name="description" content="Système complet de gestion de factures pour DEPANN'FROID">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='75' font-size='75'%3E❄️%3C/text%3E%3C/svg%3E">
     
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -15,32 +15,81 @@
     <style>
         body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        @keyframes bounce { 0%, 100% { transform: translateY(-25%); } 50% { transform: translateY(0); } }
         .animate-spin { animation: spin 1s linear infinite; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .animate-bounce { animation: bounce 1s infinite; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect, useRef } = React;
 
+        // Mock storage pour navigateur
+        if (!window.storage) {
+            window.storage = {
+                async get(key) {
+                    const value = localStorage.getItem(key);
+                    return value ? { key, value } : null;
+                },
+                async set(key, value) {
+                    localStorage.setItem(key, value);
+                    return { key, value };
+                },
+                async delete(key) {
+                    localStorage.removeItem(key);
+                    return { key, deleted: true };
+                }
+            };
+        }
+
+        // Icônes SVG
         const Icons = {
             Send: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>,
             Receipt: () => <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>,
             Copy: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>,
             Check: () => <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>,
+            Download: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>,
+            History: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+            BarChart: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+            Mail: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>,
+            Upload: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg>,
+            FileText: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+            Trash: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
+            Bell: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
+            X: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>,
+            Calculator: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>,
+            FileSignature: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
         };
 
         function App() {
+            const [activeTab, setActiveTab] = useState('new');
+            const [documentType, setDocumentType] = useState('invoice');
             const [clientName, setClientName] = useState('');
             const [documentNumber, setDocumentNumber] = useState('');
             const [amount, setAmount] = useState('');
             const [dueDate, setDueDate] = useState('');
-            const [daysOverdue, setDaysOverdue] = useState('');
+            const [issueDate, setIssueDate] = useState('');
             const [serviceDescription, setServiceDescription] = useState('');
+            const [validityDays, setValidityDays] = useState('30');
+            const [daysOverdue, setDaysOverdue] = useState('');
             const [generatedEmail, setGeneratedEmail] = useState('');
             const [isLoading, setIsLoading] = useState(false);
             const [copied, setCopied] = useState(false);
+            const [history, setHistory] = useState([]);
+            const [signature, setSignature] = useState('Lionel - Gérant DEPANN\'FROID');
+            const [reminders, setReminders] = useState([]);
+            const [showReminders, setShowReminders] = useState(false);
+            const [stats, setStats] = useState({
+                totalSent: 0,
+                totalAmount: 0,
+                totalRecovered: 0,
+                pendingAmount: 0,
+                byType: {}
+            });
 
             const formatNumber = (num) => {
                 return new Intl.NumberFormat('fr-FR').format(num);
@@ -57,38 +106,79 @@
 
             const { penalties, total } = calculatePenalties();
 
-            const generateEmail = () => {
+            useEffect(() => {
+                loadHistory();
+                checkReminders();
+            }, []);
+
+            const loadHistory = async () => {
+                try {
+                    const result = await window.storage.get('invoice-history');
+                    if (result && result.value) {
+                        const historyData = JSON.parse(result.value);
+                        setHistory(historyData);
+                        calculateStats(historyData);
+                    }
+                } catch (error) {
+                    console.log('Historique vide');
+                }
+            };
+
+            const calculateStats = (data) => {
+                const newStats = {
+                    totalSent: data.length,
+                    totalAmount: 0,
+                    totalRecovered: 0,
+                    pendingAmount: 0,
+                    byType: {
+                        invoice: 0,
+                        quote: 0,
+                        reminder1: 0,
+                        reminder2: 0,
+                        final: 0
+                    }
+                };
+
+                data.forEach(entry => {
+                    newStats.totalAmount += entry.amount;
+                    if (entry.status === 'paid') {
+                        newStats.totalRecovered += entry.totalDue || entry.amount;
+                    } else {
+                        newStats.pendingAmount += entry.totalDue || entry.amount;
+                    }
+                    if (newStats.byType[entry.type] !== undefined) {
+                        newStats.byType[entry.type]++;
+                    }
+                });
+
+                setStats(newStats);
+            };
+
+            const checkReminders = () => {
+                // Simulation de rappels
+                const alerts = [
+                    { id: 1, client: 'Restaurant Le Mahana', docNumber: 'FAC-2024-156', daysUntil: 3, type: 'upcoming', amount: 85000 },
+                    { id: 2, client: 'Hôtel Tiare', docNumber: 'FAC-2024-142', daysOverdue: 15, type: 'overdue', amount: 95681 }
+                ];
+                setReminders(alerts);
+            };
+
+            const generateEmail = async () => {
                 if (!clientName || !documentNumber || !amount) return;
                 
                 setIsLoading(true);
                 
                 setTimeout(() => {
-                    let email = `Bonjour ${clientName},
+                    let email = '';
+                    
+                    if (documentType === 'invoice') {
+                        email = `Bonjour ${clientName},
 
 Suite à notre intervention, veuillez trouver ci-joint la facture N° ${documentNumber} d'un montant de ${formatNumber(amount)} XPF.
 
-Date d'échéance : ${dueDate || 'À définir'}`;
+Date d'échéance : ${dueDate || 'À définir'}
 
-                    if (serviceDescription) {
-                        email += `\n\nService fourni : ${serviceDescription}`;
-                    }
-
-                    if (daysOverdue && parseInt(daysOverdue) > 0) {
-                        email += `\n\nNous constatons un retard de paiement de ${daysOverdue} jours.
-
-Conformément à la loi du Pays n° 2015-4 du 14 avril 2015, les pénalités suivantes s'appliquent :
-
-DÉCOMPTE DES SOMMES DUES :
-- Montant initial : ${formatNumber(amount)} XPF
-- Pénalités de retard (18% par an) : ${formatNumber(penalties)} XPF
-- Indemnité forfaitaire : 4 800 XPF
-────────────────────────────────
-TOTAL DÛ : ${formatNumber(total)} XPF
-
-Nous vous demandons de bien vouloir régulariser votre situation dans les plus brefs délais.`;
-                    }
-
-                    email += `\n\nConditions de règlement : Paiement à 30 jours
+${serviceDescription ? `Service fourni : ${serviceDescription}\n\n` : ''}Conditions de règlement : Paiement à 30 jours
 En cas de retard de paiement, pénalités exigibles de plein droit :
 - Taux d'intérêt : 18% par an
 - Indemnité forfaitaire de recouvrement : 4 800 XPF
@@ -96,13 +186,159 @@ En cas de retard de paiement, pénalités exigibles de plein droit :
 Nous restons à votre disposition pour toute question.
 
 Cordialement,
-Lionel
-Gérant DEPANN'FROID
+${signature}
 Moorea, Polynésie Française`;
+                    } else if (documentType === 'quote') {
+                        email = `Bonjour ${clientName},
+
+Suite à votre demande, veuillez trouver ci-joint notre devis N° ${documentNumber} d'un montant de ${formatNumber(amount)} XPF.
+
+${serviceDescription ? `Prestation proposée : ${serviceDescription}\n\n` : ''}Ce devis est valable ${validityDays} jours à compter de ce jour.
+
+Notre expertise de 15 ans dans la maintenance frigorifique en Polynésie française vous garantit un service de qualité et une disponibilité optimale.
+
+N'hésitez pas à nous contacter pour toute question ou précision.
+
+Nous restons à votre disposition pour valider ce devis.
+
+Cordialement,
+${signature}
+Moorea, Polynésie Française`;
+                    } else if (documentType === 'reminder1') {
+                        email = `Bonjour ${clientName},
+
+Nous vous contactons concernant la facture N° ${documentNumber} d'un montant de ${formatNumber(amount)} XPF, échue le ${dueDate}.
+
+${serviceDescription ? `Rappel du service : ${serviceDescription}\n\n` : ''}`;
+                        if (daysOverdue && parseInt(daysOverdue) > 0) {
+                            email += `Nous constatons un retard de ${daysOverdue} jours.
+
+Conformément à la loi du Pays n° 2015-4, les pénalités suivantes s'appliquent :
+- Pénalités de retard (18%/an) : ${formatNumber(penalties)} XPF
+- Indemnité forfaitaire : 4 800 XPF
+TOTAL DÛ : ${formatNumber(total)} XPF
+
+`;
+                        }
+                        email += `Nous comprenons que des difficultés peuvent survenir. N'hésitez pas à nous contacter pour envisager un arrangement si nécessaire.
+
+Nous vous remercions de régulariser cette situation rapidement.
+
+Cordialement,
+${signature}`;
+                    } else if (documentType === 'reminder2') {
+                        email = `Bonjour ${clientName},
+
+Malgré notre précédente relance, nous constatons que la facture N° ${documentNumber} demeure impayée.
+
+Montant initial : ${formatNumber(amount)} XPF
+Retard : ${daysOverdue} jours
+
+DÉCOMPTE DES SOMMES DUES :
+- Montant initial : ${formatNumber(amount)} XPF
+- Pénalités (18%/an) : ${formatNumber(penalties)} XPF
+- Indemnité forfaitaire : 4 800 XPF
+────────────────────────────────
+TOTAL DÛ : ${formatNumber(total)} XPF
+
+Nous vous demandons de régulariser cette situation sous 8 jours.
+
+À défaut, nous serons contraints d'engager une procédure de recouvrement.
+
+Nous restons ouverts au dialogue pour trouver une solution amiable.
+
+Cordialement,
+${signature}`;
+                    } else {
+                        email = `MISE EN DEMEURE
+
+${clientName}
+
+Objet : Facture impayée N° ${documentNumber}
+
+Monsieur, Madame,
+
+Malgré nos relances précédentes, nous constatons que notre facture N° ${documentNumber} demeure impayée.
+
+MONTANTS EXIGIBLES :
+┌─────────────────────────────────────────────┐
+│ Montant principal : ${formatNumber(amount)} XPF      │
+│ Pénalités (18%/an) : ${formatNumber(penalties)} XPF │
+│ Indemnité forfaitaire : 4 800 XPF          │
+├─────────────────────────────────────────────┤
+│ TOTAL EXIGIBLE : ${formatNumber(total)} XPF          │
+└─────────────────────────────────────────────┘
+
+DÉLAI IMPÉRATIF : 8 JOURS
+
+À défaut de règlement, nous engagerons SANS AUTRE AVIS :
+- Procédure judiciaire de recouvrement
+- Saisie du Tribunal de Papeete
+- Frais de justice à votre charge
+
+Fait pour valoir ce que de droit.
+
+${signature}
+${new Date().toLocaleDateString('fr-FR')}`;
+                    }
                     
                     setGeneratedEmail(email);
+                    saveToHistory();
                     setIsLoading(false);
                 }, 1000);
+            };
+
+            const saveToHistory = async () => {
+                const newEntry = {
+                    id: Date.now(),
+                    date: new Date().toISOString(),
+                    type: documentType,
+                    clientName,
+                    documentNumber,
+                    amount: parseFloat(amount.replace(/\s/g, '')),
+                    dueDate,
+                    daysOverdue: daysOverdue || 0,
+                    penaltiesAmount: penalties,
+                    totalDue: total || parseFloat(amount.replace(/\s/g, '')),
+                    email: generatedEmail,
+                    status: 'sent'
+                };
+
+                const updatedHistory = [newEntry, ...history];
+                setHistory(updatedHistory);
+                
+                try {
+                    await window.storage.set('invoice-history', JSON.stringify(updatedHistory));
+                    calculateStats(updatedHistory);
+                } catch (error) {
+                    console.error('Erreur sauvegarde');
+                }
+            };
+
+            const updateEntryStatus = async (id, newStatus) => {
+                const updatedHistory = history.map(entry => 
+                    entry.id === id ? { ...entry, status: newStatus } : entry
+                );
+                setHistory(updatedHistory);
+                
+                try {
+                    await window.storage.set('invoice-history', JSON.stringify(updatedHistory));
+                    calculateStats(updatedHistory);
+                } catch (error) {
+                    console.error('Erreur mise à jour');
+                }
+            };
+
+            const deleteEntry = async (id) => {
+                const updatedHistory = history.filter(entry => entry.id !== id);
+                setHistory(updatedHistory);
+                
+                try {
+                    await window.storage.set('invoice-history', JSON.stringify(updatedHistory));
+                    calculateStats(updatedHistory);
+                } catch (error) {
+                    console.error('Erreur suppression');
+                }
             };
 
             const copyToClipboard = async () => {
@@ -111,178 +347,527 @@ Moorea, Polynésie Française`;
                 setTimeout(() => setCopied(false), 2000);
             };
 
+            const exportToPDF = () => {
+                const content = `
+═══════════════════════════════════════════
+              DEPANN'FROID
+      Maintenance Frigorifique - PF
+═══════════════════════════════════════════
+
+${documentType === 'quote' ? 'DEVIS' : documentType === 'invoice' ? 'FACTURE' : 'RELANCE'}
+
+Date: ${new Date().toLocaleDateString('fr-FR')}
+Document N°: ${documentNumber}
+
+───────────────────────────────────────────
+CLIENT: ${clientName}
+───────────────────────────────────────────
+
+Montant: ${formatNumber(amount)} XPF
+${dueDate ? `Échéance: ${dueDate}` : ''}
+${daysOverdue ? `Retard: ${daysOverdue} jours` : ''}
+
+${penalties > 0 ? `
+───────────────────────────────────────────
+PÉNALITÉS
+───────────────────────────────────────────
+Montant initial:        ${formatNumber(amount)} XPF
+Pénalités (18%):        ${formatNumber(penalties)} XPF
+Indemnité:              4 800 XPF
+                       ─────────────────────
+TOTAL DÛ:               ${formatNumber(total)} XPF
+` : ''}
+
+───────────────────────────────────────────
+MESSAGE
+───────────────────────────────────────────
+
+${generatedEmail}
+
+───────────────────────────────────────────
+${signature}
+${new Date().toLocaleDateString('fr-FR')}
+───────────────────────────────────────────
+                `;
+
+                const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${documentType}-${documentNumber}-${new Date().toISOString().split('T')[0]}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            const documentTypes = [
+                { value: 'invoice', label: 'Émission Facture', icon: '📄', color: 'blue' },
+                { value: 'quote', label: 'Émission Devis', icon: '📋', color: 'green' },
+                { value: 'reminder1', label: '1ère Relance', icon: '📧', color: 'yellow' },
+                { value: 'reminder2', label: '2ème Relance', icon: '⚠️', color: 'orange' },
+                { value: 'final', label: 'Relance Finale', icon: '🚨', color: 'red' }
+            ];
+
+            const getColorClasses = (color) => {
+                const colors = {
+                    blue: { bg: 'bg-blue-100', border: 'border-blue-500', hover: 'hover:bg-blue-50' },
+                    green: { bg: 'bg-green-100', border: 'border-green-500', hover: 'hover:bg-green-50' },
+                    yellow: { bg: 'bg-yellow-100', border: 'border-yellow-500', hover: 'hover:bg-yellow-50' },
+                    orange: { bg: 'bg-orange-100', border: 'border-orange-500', hover: 'hover:bg-orange-50' },
+                    red: { bg: 'bg-red-100', border: 'border-red-500', hover: 'hover:bg-red-50' }
+                };
+                return colors[color];
+            };
+
+            const isReminderType = ['reminder1', 'reminder2', 'final'].includes(documentType);
+
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+                    {/* Notifications */}
+                    {reminders.length > 0 && (
+                        <div className="fixed top-4 right-4 z-50 max-w-md">
+                            <div className="bg-white rounded-lg shadow-2xl border-2 border-orange-400 p-4 animate-pulse">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Icons.Bell />
+                                        <h3 className="font-bold text-slate-800">Rappels ({reminders.length})</h3>
+                                    </div>
+                                    <button onClick={() => setShowReminders(!showReminders)} className="text-slate-400 hover:text-slate-600">
+                                        {showReminders ? <Icons.X /> : '👁️'}
+                                    </button>
+                                </div>
+                                {showReminders && (
+                                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {reminders.map(reminder => (
+                                            <div key={reminder.id} className={`p-3 rounded-lg ${reminder.type === 'overdue' ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+                                                <div className="font-medium text-sm">{reminder.client}</div>
+                                                <div className="text-xs text-slate-600">{reminder.docNumber}</div>
+                                                <div className="text-xs font-semibold mt-1">
+                                                    {reminder.type === 'overdue' ? (
+                                                        <span className="text-red-600">⚠️ Retard: {reminder.daysOverdue} jours - {formatNumber(reminder.amount)} XPF</span>
+                                                    ) : (
+                                                        <span className="text-orange-600">📅 Échéance dans {reminder.daysUntil} jours</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Header */}
                     <div className="relative overflow-hidden">
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-indigo-600/5"></div>
-                        <div className="relative max-w-7xl mx-auto px-6 py-8">
+                        <div className="relative max-w-7xl mx-auto px-6 py-6">
                             <div className="text-center">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+                                <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl mb-3 shadow-lg">
                                     <Icons.Receipt />
                                 </div>
-                                <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-2">
-                                    DEPANN'FROID
-                                </h1>
-                                <p className="text-lg text-slate-600">
+                                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent mb-1">
                                     Factures Devis Relances Pro
-                                </p>
+                                </h1>
+                                <p className="text-sm text-slate-600">DEPANN'FROID - Solution Complète</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="max-w-7xl mx-auto px-6 pb-12">
-                        <div className="grid lg:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
-                                    <h2 className="text-xl font-semibold text-slate-800 mb-4">Informations Facture</h2>
-                                    <div className="space-y-3">
-                                        <input
-                                            type="text"
-                                            value={clientName}
-                                            onChange={(e) => setClientName(e.target.value)}
-                                            placeholder="Nom du client *"
-                                            className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <input
-                                                type="text"
-                                                value={documentNumber}
-                                                onChange={(e) => setDocumentNumber(e.target.value)}
-                                                placeholder="N° Facture *"
-                                                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={amount}
-                                                onChange={(e) => setAmount(e.target.value)}
-                                                placeholder="Montant XPF *"
-                                                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <input
-                                                type="text"
-                                                value={dueDate}
-                                                onChange={(e) => setDueDate(e.target.value)}
-                                                placeholder="Date échéance"
-                                                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={daysOverdue}
-                                                onChange={(e) => setDaysOverdue(e.target.value)}
-                                                placeholder="Jours retard"
-                                                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
-                                            />
-                                        </div>
-                                        <textarea
-                                            value={serviceDescription}
-                                            onChange={(e) => setServiceDescription(e.target.value)}
-                                            placeholder="Description du service"
-                                            className="w-full h-20 p-3 border border-slate-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                        />
-                                    </div>
-                                </div>
-
-                                {daysOverdue && amount && parseInt(daysOverdue) > 0 && (
-                                    <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-5 shadow-xl border border-orange-200">
-                                        <h3 className="font-semibold text-slate-800 mb-3">Calcul des Pénalités</h3>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span>Montant initial</span>
-                                                <span className="font-semibold">{formatNumber(amount)} XPF</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Pénalités (18%)</span>
-                                                <span className="font-semibold text-orange-600">{formatNumber(penalties)} XPF</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                                <span>Indemnité forfaitaire</span>
-                                                <span className="font-semibold text-orange-600">4 800 XPF</span>
-                                            </div>
-                                            <div className="flex justify-between pt-2 border-t-2 border-orange-300">
-                                                <span className="font-bold">TOTAL DÛ</span>
-                                                <span className="text-lg font-bold text-red-600">{formatNumber(total)} XPF</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                <button
-                                    onClick={generateEmail}
-                                    disabled={isLoading || !clientName || !documentNumber || !amount}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
-                                >
-                                    {isLoading ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            Génération...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Icons.Send />
-                                            Générer l'Email
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h2 className="text-xl font-semibold text-slate-800">Email Généré</h2>
-                                    {generatedEmail && (
+                    {/* Navigation Tabs */}
+                    <div className="max-w-7xl mx-auto px-6 mb-6">
+                        <div className="bg-white/70 backdrop-blur-sm rounded-xl p-2 shadow-lg border border-white/20">
+                            <div className="flex gap-2 flex-wrap">
+                                {[
+                                    { id: 'new', label: 'Nouveau', icon: Icons.FileText },
+                                    { id: 'history', label: 'Historique', icon: Icons.History },
+                                    { id: 'stats', label: 'Statistiques', icon: Icons.BarChart },
+                                    { id: 'letters', label: 'Lettres AR', icon: Icons.Mail },
+                                    { id: 'signature', label: 'Signature', icon: Icons.FileSignature }
+                                ].map(tab => {
+                                    const Icon = tab.icon;
+                                    return (
                                         <button
-                                            onClick={copyToClipboard}
-                                            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-slate-700 font-medium text-sm"
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all text-sm ${
+                                                activeTab === tab.id
+                                                    ? 'bg-blue-600 text-white shadow-md'
+                                                    : 'text-slate-600 hover:bg-slate-100'
+                                            }`}
                                         >
-                                            {copied ? (
-                                                <>
-                                                    <Icons.Check />
-                                                    Copié !
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Icons.Copy />
-                                                    Copier
-                                                </>
-                                            )}
+                                            <Icon />
+                                            {tab.label}
                                         </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="max-w-7xl mx-auto px-6 pb-12">
+                        {activeTab === 'new' && (
+                            <div className="grid lg:grid-cols-2 gap-6">
+                                {/* Input Column */}
+                                <div className="space-y-4">
+                                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-white/20">
+                                        <h2 className="text-lg font-semibold text-slate-800 mb-3">Type de Document</h2>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {documentTypes.map((type) => {
+                                                const colors = getColorClasses(type.color);
+                                                return (
+                                                    <button
+                                                        key={type.value}
+                                                        onClick={() => setDocumentType(type.value)}
+                                                        className={`p-3 rounded-lg border-2 transition-all text-left ${
+                                                            documentType === type.value
+                                                                ? `${colors.border} ${colors.bg} shadow-md`
+                                                                : `border-slate-200 bg-white/50 ${colors.hover}`
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="text-lg">{type.icon}</span>
+                                                            <div className="font-semibold text-xs text-slate-800">{type.label}</div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-white/20">
+                                        <h2 className="text-lg font-semibold text-slate-800 mb-3">Informations</h2>
+                                        <div className="space-y-3">
+                                            <input
+                                                type="text"
+                                                value={clientName}
+                                                onChange={(e) => setClientName(e.target.value)}
+                                                placeholder="Nom du client *"
+                                                className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50"
+                                            />
+                                            
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={documentNumber}
+                                                    onChange={(e) => setDocumentNumber(e.target.value)}
+                                                    placeholder={documentType === 'quote' ? 'N° Devis *' : 'N° Facture *'}
+                                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50"
+                                                />
+                                                <input
+                                                    type="text"
+                                                    value={amount}
+                                                    onChange={(e) => setAmount(e.target.value)}
+                                                    placeholder="Montant XPF *"
+                                                    className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {documentType === 'quote' ? (
+                                                    <>
+                                                        <input type="text" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} placeholder="Date émission" className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50" />
+                                                        <input type="text" value={validityDays} onChange={(e) => setValidityDays(e.target.value)} placeholder="Validité (jours)" className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <input type="text" value={isReminderType ? dueDate : issueDate} onChange={(e) => isReminderType ? setDueDate(e.target.value) : setIssueDate(e.target.value)} placeholder={isReminderType ? 'Date échéance' : 'Date émission'} className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50" />
+                                                        {isReminderType ? (
+                                                            <input type="text" value={daysOverdue} onChange={(e) => setDaysOverdue(e.target.value)} placeholder="Jours retard" className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50" />
+                                                        ) : (
+                                                            <input type="text" value={dueDate} onChange={(e) => setDueDate(e.target.value)} placeholder="Date échéance" className="w-full p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 bg-white/50" />
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            <textarea
+                                                value={serviceDescription}
+                                                onChange={(e) => setServiceDescription(e.target.value)}
+                                                placeholder="Description du service"
+                                                className="w-full h-16 p-2 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-blue-500 bg-white/50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {isReminderType && daysOverdue && amount && parseInt(daysOverdue) > 0 && (
+                                        <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 shadow-xl border border-orange-200">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Icons.Calculator />
+                                                <h2 className="text-base font-semibold text-slate-800">Calcul Pénalités</h2>
+                                            </div>
+                                            <div className="space-y-2 text-sm">
+                                                <div className="flex justify-between"><span>Montant initial</span><span className="font-semibold">{formatNumber(amount)} XPF</span></div>
+                                                <div className="flex justify-between"><span>Pénalités (18%)</span><span className="font-semibold text-orange-600">{formatNumber(penalties)} XPF</span></div>
+                                                <div className="flex justify-between"><span>Indemnité</span><span className="font-semibold text-orange-600">4 800 XPF</span></div>
+                                                <div className="flex justify-between pt-2 border-t-2 border-orange-300"><span className="font-bold">TOTAL DÛ</span><span className="text-lg font-bold text-red-600">{formatNumber(total)} XPF</span></div>
+                                            </div>
+                                        </div>
                                     )}
+
+                                    <button
+                                        onClick={generateEmail}
+                                        disabled={isLoading || !clientName || !documentNumber || !amount}
+                                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        {isLoading ? (
+                                            <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>Génération...</>
+                                        ) : (
+                                            <><Icons.Send />Générer l'Email</>
+                                        )}
+                                    </button>
                                 </div>
-                                
-                                {generatedEmail ? (
-                                    <div className="bg-white/80 rounded-xl p-6 border border-slate-200 max-h-[600px] overflow-y-auto">
-                                        <pre className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed text-sm">
-                                            {generatedEmail}
-                                        </pre>
+
+                                {/* Output Column */}
+                                <div className="space-y-4">
+                                    <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-white/20 min-h-96">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <h2 className="text-lg font-semibold text-slate-800">Email Généré</h2>
+                                            <div className="flex gap-2">
+                                                {generatedEmail && (
+                                                    <>
+                                                        <button onClick={copyToClipboard} className="flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-medium">
+                                                            {copied ? <><Icons.Check />Copié</> : <><Icons.Copy />Copier</>}
+                                                        </button>
+                                                        <button onClick={exportToPDF} className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-medium">
+                                                            <Icons.Download />PDF
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {generatedEmail ? (
+                                            <div className="bg-white/80 rounded-lg p-4 border border-slate-200 max-h-[500px] overflow-y-auto">
+                                                <pre className="whitespace-pre-wrap font-sans text-slate-700 text-sm leading-relaxed">{generatedEmail}</pre>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                                                <Icons.Receipt />
+                                                <p className="text-sm mt-3">Votre email apparaîtra ici</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+                                        <h3 className="font-semibold text-slate-800 mb-2 text-sm">📋 Infos Légales PF</h3>
+                                        <ul className="text-xs text-slate-600 space-y-1">
+                                            <li>• Taux: 18%/an (min 11,13%)</li>
+                                            <li>• Indemnité: 4 800 XPF/facture</li>
+                                            <li>• Délai: 30j (60j max)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'history' && (
+                            <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-xl border border-white/20">
+                                <h2 className="text-xl font-semibold text-slate-800 mb-4">Historique des Envois</h2>
+                                {history.length === 0 ? (
+                                    <div className="text-center py-12 text-slate-400">
+                                        <Icons.History />
+                                        <p className="mt-4">Aucun historique</p>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-64 text-slate-400">
-                                        <Icons.Receipt />
-                                        <p className="text-lg mt-4">Votre email apparaîtra ici</p>
-                                        <p className="text-sm mt-2">Remplissez les informations et générez</p>
+                                    <div className="space-y-3">
+                                        {history.slice(0, 10).map(entry => (
+                                            <div key={entry.id} className="bg-white/80 rounded-lg p-4 border border-slate-200">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="font-semibold text-slate-800">{entry.clientName}</div>
+                                                        <div className="text-sm text-slate-600">{entry.documentNumber} - {formatNumber(entry.amount)} XPF</div>
+                                                        <div className="text-xs text-slate-500 mt-1">{new Date(entry.date).toLocaleString('fr-FR')}</div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <select value={entry.status} onChange={(e) => updateEntryStatus(entry.id, e.target.value)} className="px-2 py-1 text-xs border border-slate-200 rounded bg-white">
+                                                            <option value="sent">Envoyé</option>
+                                                            <option value="paid">Payé</option>
+                                                            <option value="pending">En attente</option>
+                                                        </select>
+                                                        <button onClick={() => deleteEntry(entry.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                                                            <Icons.Trash />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {entry.penaltiesAmount > 0 && (
+                                                    <div className="text-xs text-orange-600 mt-2 p-2 bg-orange-50 rounded">
+                                                        Pénalités: {formatNumber(entry.penaltiesAmount)} XPF | Total: {formatNumber(entry.totalDue)} XPF
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        )}
 
-                        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-                            <h3 className="font-semibold text-slate-800 mb-3 text-center">📋 Informations Légales - Polynésie Française</h3>
-                            <div className="grid md:grid-cols-3 gap-4 text-sm text-slate-600">
-                                <div className="text-center">
-                                    <div className="font-semibold text-blue-600">Taux appliqué</div>
-                                    <div>18% par an</div>
+                        {activeTab === 'stats' && (
+                            <div className="grid md:grid-cols-3 gap-6">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                            <Icons.Send />
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-slate-800">{stats.totalSent}</div>
+                                            <div className="text-sm text-slate-600">Documents envoyés</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-semibold text-blue-600">Indemnité forfaitaire</div>
-                                    <div>4 800 XPF par facture</div>
+
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                                            <span className="text-2xl">💰</span>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-slate-800">{formatNumber(stats.totalRecovered)}</div>
+                                            <div className="text-sm text-slate-600">XPF recouvrés</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-semibold text-blue-600">Délai de paiement</div>
-                                    <div>30 jours (60 jours max)</div>
+
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                                            <span className="text-2xl">⏳</span>
+                                        </div>
+                                        <div>
+                                            <div className="text-2xl font-bold text-slate-800">{formatNumber(stats.pendingAmount)}</div>
+                                            <div className="text-sm text-slate-600">XPF en attente</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                                    <h3 className="text-lg font-semibold text-slate-800 mb-3">Taux de recouvrement</h3>
+                                    <div className="text-4xl font-bold text-blue-600 mb-2">
+                                        {stats.totalAmount > 0 ? Math.round((stats.totalRecovered / (stats.totalAmount + stats.totalRecovered)) * 100) : 0}%
+                                    </div>
+                                    <div className="w-full bg-slate-200 rounded-full h-4">
+                                        <div className="bg-gradient-to-r from-blue-500 to-green-500 h-4 rounded-full" style={{width: `${stats.totalAmount > 0 ? (stats.totalRecovered / (stats.totalAmount + stats.totalRecovered)) * 100 : 0}%`}}></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
+
+                        {activeTab === 'letters' && (
+                            <div className="grid lg:grid-cols-2 gap-6">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <h2 className="text-xl font-semibold text-slate-800 mb-4">📨 Lettre de Relance AR</h2>
+                                    <p className="text-sm text-slate-600 mb-4">Modèle formel pour relance avec accusé de réception</p>
+                                    <div className="bg-slate-50 rounded-lg p-4 max-h-64 overflow-y-auto mb-4 text-xs font-mono">
+                                        <pre className="whitespace-pre-wrap">
+LETTRE RECOMMANDÉE AVEC AR
+
+DEPANN'FROID
+Moorea, Polynésie Française
+
+{clientName}
+[Adresse]
+
+Moorea, le {new Date().toLocaleDateString('fr-FR')}
+
+Objet : Rappel facture impayée N° {documentNumber}
+
+Madame, Monsieur,
+
+Nous constatons que notre facture N° {documentNumber} 
+d'un montant de {amount} XPF demeure impayée.
+
+Pénalités appliquées :
+- Taux : 18% par an
+- Indemnité : 4 800 XPF
+
+Délai de règlement : 8 jours
+
+Cordialement,
+{signature}
+                                        </pre>
+                                    </div>
+                                    <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm">
+                                        📥 Télécharger le modèle
+                                    </button>
+                                </div>
+
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <h2 className="text-xl font-semibold text-slate-800 mb-4">⚖️ Mise en Demeure</h2>
+                                    <p className="text-sm text-slate-600 mb-4">Document juridique avant procédure</p>
+                                    <div className="bg-slate-50 rounded-lg p-4 max-h-64 overflow-y-auto mb-4 text-xs font-mono">
+                                        <pre className="whitespace-pre-wrap">
+MISE EN DEMEURE FORMELLE
+
+DEPANN'FROID
+Moorea, Polynésie Française
+
+{clientName}
+
+MISE EN DEMEURE
+Facture N° {documentNumber}
+
+DÉLAI IMPÉRATIF : 8 JOURS
+
+Montants exigibles :
+- Principal : {amount} XPF
+- Pénalités : {...} XPF
+- Indemnité : 4 800 XPF
+
+Action judiciaire en cas de non-règlement.
+
+{signature}
+{new Date().toLocaleDateString('fr-FR')}
+                                        </pre>
+                                    </div>
+                                    <button className="w-full bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition text-sm">
+                                        📥 Télécharger certifié
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'signature' && (
+                            <div className="grid lg:grid-cols-2 gap-6">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <h2 className="text-xl font-semibold text-slate-800 mb-4">✍️ Signature Numérique</h2>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-700 mb-2">Signature texte</label>
+                                            <input
+                                                type="text"
+                                                value={signature}
+                                                onChange={(e) => setSignature(e.target.value)}
+                                                placeholder="Ex: Lionel - Gérant DEPANN'FROID"
+                                                className="w-full p-3 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={async () => {
+                                                await window.storage.set('user-signature', JSON.stringify({ text: signature }));
+                                                alert('Signature enregistrée !');
+                                            }}
+                                            className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition"
+                                        >
+                                            Enregistrer la signature
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/20">
+                                    <h2 className="text-xl font-semibold text-slate-800 mb-4">👁️ Prévisualisation</h2>
+                                    <div className="bg-slate-50 rounded-lg p-6 border-2 border-slate-200">
+                                        <p className="text-sm text-slate-600 mb-4">Votre signature apparaîtra ainsi :</p>
+                                        <div className="border-t-2 border-slate-300 pt-4">
+                                            <div className="text-center">
+                                                <p className="text-sm text-slate-500 mb-2">───────────────────</p>
+                                                <p className="font-semibold text-slate-800">SIGNATURE NUMÉRIQUE</p>
+                                                <p className="text-slate-700 my-2">{signature}</p>
+                                                <p className="text-xs text-slate-400 mt-2">{new Date().toLocaleString('fr-FR')}</p>
+                                                <p className="text-sm text-slate-500 mt-2">───────────────────</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
