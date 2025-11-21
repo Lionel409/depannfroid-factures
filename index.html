@@ -1309,8 +1309,8 @@ const envoyerEmailDevis = async () => {
                     <label className="block text-sm font-medium text-slate-700 mb-2">Email client</label>
                     <input
                         type="email"
-                        value={formData.clientEmail}
-                        onChange={(e) => setFormData(prev => ({ ...prev, clientEmail: e.target.value }))}
+                        value={lettreARData.clientAdresse || ''}
+                        onChange={(e) => setLettreARData(prev => ({ ...prev, clientAdresse: e.target.value }))}
                         className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500"
                         placeholder="contact@restaurant.pf"
                     />
@@ -1338,16 +1338,26 @@ const envoyerEmailDevis = async () => {
 
             <button
                 onClick={() => {
-                    if (!formData.clientEmail) {
-                        alert('❌ Veuillez saisir un email client !');
-                        return;
-                    }
-                    alert('📧 Email de rappel envoyé avec succès !\n\n(Pour l\'instant simulation uniquement - intégration Google Apps Script à venir)');
-                }}
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
-            >
-                📧 Envoyer le rappel par email
-            </button>
+                    if (!lettreARData.clientAdresse) {
+                    alert('❌ Veuillez saisir un email client !');
+                return;
+            }
+                    if (!lettreARData.numeroFacture) {
+                    alert('❌ Veuillez saisir un numéro de facture !');
+                 return;
+            }
+                    if (!lettreARData.montantDu || parseFloat(lettreARData.montantDu) <= 0) {
+                    alert('❌ Veuillez saisir un montant dû valide !');
+                return;
+            }
+        
+            alert('✅ Email de rappel envoyé avec succès à ' + lettreARData.clientAdresse + ' !\n\n📧 Contenu :\n- Facture N°' + lettreARData.numeroFacture + '\n- Montant : ' + (parseFloat(lettreARData.montantDu) || 0).toLocaleString('fr-FR') + ' XPF\n\n(Simulation - Intégration Google Apps Script à venir)');
+        }}
+        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:shadow-2xl transition"
+    >
+        📧 Envoyer le rappel par email
+    </button>
+            
         </div>
 
         {/* Aperçu Email */}
