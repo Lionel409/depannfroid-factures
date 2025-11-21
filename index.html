@@ -43,8 +43,7 @@
                 clientAdresse: '',
                 clientEmail: '',
                 clientTelephone: '',
-                prestations: [{ description: '', quantite: 1, prixUnitaire: 0 }],
-                tva: 5,
+                prestations: [{ description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }],
                 montantTotal: 0,
                 accompte: 0,
                 conditions: 'Devis valable 30 jours. Paiement : 30% à la commande, 70% à la livraison.'
@@ -58,8 +57,7 @@
                 clientAdresse: '',
                 clientEmail: '',
                 clientTelephone: '',
-                prestations: [{ description: '', quantite: 1, prixUnitaire: 0 }],
-                tva: 5,
+                prestations: [{ description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }],
                 montantTotal: 0,
                 accompte: 0,
                 resteAPayer: 0
@@ -106,7 +104,7 @@
             const addPrestationDevis = () => {
                 setDevisData(prev => ({
                     ...prev,
-                    prestations: [...prev.prestations, { description: '', quantite: 1, prixUnitaire: 0 }]
+                    prestations: [...prev.prestations, { description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }]
                 }));
             };
 
@@ -128,7 +126,7 @@
             const addPrestation = () => {
                 setFormData(prev => ({
                     ...prev,
-                    prestations: [...prev.prestations, { description: '', quantite: 1, prixUnitaire: 0 }]
+                    prestations: [...prev.prestations, { description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }]
                 }));
             };
 
@@ -147,31 +145,78 @@
                 });
             };
 
+            const calculateTotalsDevis = () => {
+                let fournituresHT = 0;
+                let servicesHT = 0;
+
+                devisData.prestations.forEach(p => {
+                    const total = (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0);
+                    if (p.type === 'fourniture') {
+                        fournituresHT += total;
+                    } else {
+                        servicesHT += total;
+                    }
+                });
+
+                const tvaFournitures = fournituresHT * 0.16;
+                const tvaServices = servicesHT * 0.13;
+                const total = fournituresHT + servicesHT + tvaFournitures + tvaServices;
+
+                return {
+                    fournituresHT,
+                    servicesHT,
+                    tvaFournitures,
+                    tvaServices,
+                    totalHT: fournituresHT + servicesHT,
+                    totalTVA: tvaFournitures + tvaServices,
+                    totalTTC: total
+                };
+            };
+
+            const calculateTotals = () => {
+                let fournituresHT = 0;
+                let servicesHT = 0;
+
+                formData.prestations.forEach(p => {
+                    const total = (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0);
+                    if (p.type === 'fourniture') {
+                        fournituresHT += total;
+                    } else {
+                        servicesHT += total;
+                    }
+                });
+
+                const tvaFournitures = fournituresHT * 0.16;
+                const tvaServices = servicesHT * 0.13;
+                const totalTTC = fournituresHT + servicesHT + tvaFournitures + tvaServices;
+                const resteAPayer = totalTTC - (parseFloat(formData.accompte) || 0);
+
+                return {
+                    fournituresHT,
+                    servicesHT,
+                    tvaFournitures,
+                    tvaServices,
+                    totalHT: fournituresHT + servicesHT,
+                    totalTVA: tvaFournitures + tvaServices,
+                    totalTTC,
+                    resteAPayer
+                };
+            };
+
             const calculateTotalDevis = () => {
-                const subtotal = devisData.prestations.reduce((sum, p) => 
-                    sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                );
-                const tvaAmount = subtotal * (parseFloat(devisData.tva) / 100);
-                const total = subtotal + tvaAmount;
-                
+                const totals = calculateTotalsDevis();
                 setDevisData(prev => ({
                     ...prev,
-                    montantTotal: total.toFixed(0)
+                    montantTotal: totals.totalTTC.toFixed(0)
                 }));
             };
 
             const calculateTotal = () => {
-                const subtotal = formData.prestations.reduce((sum, p) => 
-                    sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                );
-                const tvaAmount = subtotal * (parseFloat(formData.tva) / 100);
-                const total = subtotal + tvaAmount;
-                const resteAPayer = total - (parseFloat(formData.accompte) || 0);
-                
+                const totals = calculateTotals();
                 setFormData(prev => ({
                     ...prev,
-                    montantTotal: total.toFixed(0),
-                    resteAPayer: resteAPayer.toFixed(0)
+                    montantTotal: totals.totalTTC.toFixed(0),
+                    resteAPayer: totals.resteAPayer.toFixed(0)
                 }));
             };
 
@@ -200,11 +245,11 @@
 
             React.useEffect(() => {
                 calculateTotalDevis();
-            }, [devisData.prestations, devisData.tva]);
+            }, [devisData.prestations]);
 
             React.useEffect(() => {
                 calculateTotal();
-            }, [formData.prestations, formData.tva, formData.accompte]);
+            }, [formData.prestations, formData.accompte]);
 
             return (
                 <div className="container mx-auto p-6 max-w-7xl">
@@ -219,7 +264,7 @@
                             </div>
                             <div className="text-right">
                                 <p className="text-sm text-slate-500">📞 87 70 64 75</p>
-                                <p className="text-sm text-slate-500">📧 depannfroidmoorea@gmail.com</p>
+                                <p className="text-sm text-slate-500">📧 depannfroid@mail.pf</p>
                                 <p className="text-sm text-slate-500">📍 Moorea, Polynésie française</p>
                             </div>
                         </div>
@@ -340,8 +385,9 @@
                                     </div>
 
                                     <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
+                                    <p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
                                     {devisData.prestations.map((prestation, index) => (
-                                        <div key={index} className="grid md:grid-cols-4 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
+                                        <div key={index} className="grid md:grid-cols-5 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
                                             <div className="md:col-span-2">
                                                 <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                                                 <input
@@ -349,11 +395,22 @@
                                                     value={prestation.description}
                                                     onChange={(e) => updatePrestationDevis(index, 'description', e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                    placeholder="Installation chambre froide positive"
+                                                    placeholder="Installation chambre froide"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Quantité</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+                                                <select
+                                                    value={prestation.type}
+                                                    onChange={(e) => updatePrestationDevis(index, 'type', e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                                                >
+                                                    <option value="fourniture">Fourniture (16%)</option>
+                                                    <option value="service">Service (13%)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
                                                 <input
                                                     type="number"
                                                     value={prestation.quantite}
@@ -363,7 +420,7 @@
                                             </div>
                                             <div className="flex gap-2 items-end">
                                                 <div className="flex-1">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Prix unitaire (XPF)</label>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
                                                     <input
                                                         type="number"
                                                         value={prestation.prixUnitaire}
@@ -390,28 +447,16 @@
                                         ➕ Ajouter une prestation
                                     </button>
 
-                                    <div className="mt-6 grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">TVA (%)</label>
-                                            <input
-                                                type="number"
-                                                name="tva"
-                                                value={devisData.tva}
-                                                onChange={handleDevisChange}
-                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Accompte demandé (XPF)</label>
-                                            <input
-                                                type="number"
-                                                name="accompte"
-                                                value={devisData.accompte}
-                                                onChange={handleDevisChange}
-                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                                                placeholder="0"
-                                            />
-                                        </div>
+                                    <div className="mt-6">
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Accompte demandé (XPF)</label>
+                                        <input
+                                            type="number"
+                                            name="accompte"
+                                            value={devisData.accompte}
+                                            onChange={handleDevisChange}
+                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                            placeholder="0"
+                                        />
                                     </div>
 
                                     <div className="mt-6">
@@ -450,7 +495,7 @@
                                                 <h1 className="text-4xl font-bold text-blue-600 mb-2">DEPANN'FROID</h1>
                                                 <p className="text-slate-600">Installation & Maintenance Froid Commercial</p>
                                                 <p className="text-sm text-slate-500 mt-2">📞 87 70 64 75</p>
-                                                <p className="text-sm text-slate-500">📧 depannfroidmoorea@gmail.com</p>
+                                                <p className="text-sm text-slate-500">📧 depannfroid@mail.pf</p>
                                                 <p className="text-sm text-slate-500">📍 Moorea, Polynésie française</p>
                                             </div>
                                             <div className="text-right">
@@ -477,6 +522,7 @@
                                             <thead>
                                                 <tr className="bg-blue-600 text-white">
                                                     <th className="text-left p-4 rounded-tl-lg">Description</th>
+                                                    <th className="text-center p-4">Type</th>
                                                     <th className="text-center p-4">Qté</th>
                                                     <th className="text-right p-4">P.U. (XPF)</th>
                                                     <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
@@ -486,6 +532,15 @@
                                                 {devisData.prestations.map((prestation, index) => (
                                                     <tr key={index} className="border-b border-slate-200">
                                                         <td className="p-4">{prestation.description || '---'}</td>
+                                                        <td className="text-center p-4">
+                                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                                prestation.type === 'fourniture' 
+                                                                    ? 'bg-purple-100 text-purple-800' 
+                                                                    : 'bg-green-100 text-green-800'
+                                                            }`}>
+                                                                {prestation.type === 'fourniture' ? 'Fourniture' : 'Service'}
+                                                            </span>
+                                                        </td>
                                                         <td className="text-center p-4">{prestation.quantite}</td>
                                                         <td className="text-right p-4">{(parseFloat(prestation.prixUnitaire) || 0).toLocaleString('fr-FR')}</td>
                                                         <td className="text-right p-4 font-semibold">
@@ -496,36 +551,59 @@
                                             </tbody>
                                         </table>
 
-                                        {/* Totaux */}
+                                        {/* Totaux avec double TVA */}
                                         <div className="flex justify-end mb-8">
-                                            <div className="w-80">
-                                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                                    <span className="text-slate-600">Sous-total HT:</span>
-                                                    <span className="font-semibold">
-                                                        {(devisData.prestations.reduce((sum, p) => 
-                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                                                        )).toLocaleString('fr-FR')} XPF
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                                    <span className="text-slate-600">TVA ({devisData.tva}%):</span>
-                                                    <span className="font-semibold">
-                                                        {(devisData.prestations.reduce((sum, p) => 
-                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                                                        ) * (parseFloat(devisData.tva) / 100)).toLocaleString('fr-FR')} XPF
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between py-3 bg-blue-600 text-white px-4 rounded-lg mt-2">
-                                                    <span className="font-bold text-lg">TOTAL TTC:</span>
-                                                    <span className="font-bold text-xl">{(parseFloat(devisData.montantTotal) || 0).toLocaleString('fr-FR')} XPF</span>
-                                                </div>
-                                                {parseFloat(devisData.accompte) > 0 && (
-                                                    <div className="flex justify-between py-2 bg-orange-100 px-4 rounded-lg mt-2">
-                                                        <span className="font-semibold text-orange-800">Accompte demandé:</span>
-                                                        <span className="font-bold text-orange-800">{(parseFloat(devisData.accompte) || 0).toLocaleString('fr-FR')} XPF</span>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <div className="w-96">
+                                                {(() => {
+                                                    const totals = calculateTotalsDevis();
+                                                    return (
+                                                        <>
+                                                            {totals.fournituresHT > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">Fournitures HT:</span>
+                                                                        <span className="font-semibold">{totals.fournituresHT.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">TVA Fournitures (16%):</span>
+                                                                        <span className="font-semibold">{totals.tvaFournitures.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {totals.servicesHT > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">Services HT:</span>
+                                                                        <span className="font-semibold">{totals.servicesHT.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">TVA Services (13%):</span>
+                                                                        <span className="font-semibold">{totals.tvaServices.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            <div className="flex justify-between py-2 border-b-2 border-slate-300 font-semibold">
+                                                                <span className="text-slate-800">Total HT:</span>
+                                                                <span>{totals.totalHT.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b-2 border-slate-300 font-semibold">
+                                                                <span className="text-slate-800">Total TVA:</span>
+                                                                <span>{totals.totalTVA.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-3 bg-blue-600 text-white px-4 rounded-lg mt-2">
+                                                                <span className="font-bold text-lg">TOTAL TTC:</span>
+                                                                <span className="font-bold text-xl">{totals.totalTTC.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            {parseFloat(devisData.accompte) > 0 && (
+                                                                <div className="flex justify-between py-2 bg-orange-100 px-4 rounded-lg mt-2">
+                                                                    <span className="font-semibold text-orange-800">Accompte demandé:</span>
+                                                                    <span className="font-bold text-orange-800">{(parseFloat(devisData.accompte) || 0).toLocaleString('fr-FR')} XPF</span>
+                                                                </div>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
+                                                            </div>
                                         </div>
 
                                         {/* Conditions */}
@@ -565,7 +643,7 @@
                                 <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
                                     <h2 className="text-2xl font-bold text-slate-800 mb-6">📄 Informations de la facture</h2>
                                     
-                                    <div className="grid md:grid-cols-3 gap-4 mb-6">
+                                    <div className="grid md:grid-cols-2 gap-4 mb-6">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-700 mb-2">N° Facture</label>
                                             <input
@@ -583,16 +661,6 @@
                                                 type="date"
                                                 name="dateFacture"
                                                 value={formData.dateFacture}
-                                                onChange={handleInputChange}
-                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">TVA (%)</label>
-                                            <input
-                                                type="number"
-                                                name="tva"
-                                                value={formData.tva}
                                                 onChange={handleInputChange}
                                                 className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
                                             />
@@ -648,8 +716,9 @@
                                     </div>
 
                                     <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
+                                    <p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
                                     {formData.prestations.map((prestation, index) => (
-                                        <div key={index} className="grid md:grid-cols-4 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
+                                        <div key={index} className="grid md:grid-cols-5 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
                                             <div className="md:col-span-2">
                                                 <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                                                 <input
@@ -661,7 +730,18 @@
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Quantité</label>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+                                                <select
+                                                    value={prestation.type}
+                                                    onChange={(e) => updatePrestation(index, 'type', e.target.value)}
+                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                                                >
+                                                    <option value="fourniture">Fourniture (16%)</option>
+                                                    <option value="service">Service (13%)</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
                                                 <input
                                                     type="number"
                                                     value={prestation.quantite}
@@ -671,7 +751,7 @@
                                             </div>
                                             <div className="flex gap-2 items-end">
                                                 <div className="flex-1">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">Prix unitaire (XPF)</label>
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
                                                     <input
                                                         type="number"
                                                         value={prestation.prixUnitaire}
@@ -698,18 +778,16 @@
                                         ➕ Ajouter une prestation
                                     </button>
 
-                                    <div className="mt-6 grid md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-700 mb-2">Accompte versé (XPF)</label>
-                                            <input
-                                                type="number"
-                                                name="accompte"
-                                                value={formData.accompte}
-                                                onChange={handleInputChange}
-                                                className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
-                                                placeholder="0"
-                                            />
-                                        </div>
+                                    <div className="mt-6">
+                                        <label className="block text-sm font-medium text-slate-700 mb-2">Accompte versé (XPF)</label>
+                                        <input
+                                            type="number"
+                                            name="accompte"
+                                            value={formData.accompte}
+                                            onChange={handleInputChange}
+                                            className="w-full px-4 py-3 rounded-lg border-2 border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+                                            placeholder="0"
+                                        />
                                     </div>
 
                                     <div className="mt-8 flex gap-4">
@@ -737,7 +815,7 @@
                                                 <h1 className="text-4xl font-bold text-blue-600 mb-2">DEPANN'FROID</h1>
                                                 <p className="text-slate-600">Installation & Maintenance Froid Commercial</p>
                                                 <p className="text-sm text-slate-500 mt-2">📞 87 70 64 75</p>
-                                                <p className="text-sm text-slate-500">📧 depannfroidmoorea@gmail.com</p>
+                                                <p className="text-sm text-slate-500">📧 depannfroid@mail.pf</p>
                                                 <p className="text-sm text-slate-500">📍 Moorea, Polynésie française</p>
                                             </div>
                                             <div className="text-right">
@@ -761,6 +839,7 @@
                                             <thead>
                                                 <tr className="bg-blue-600 text-white">
                                                     <th className="text-left p-4 rounded-tl-lg">Description</th>
+                                                    <th className="text-center p-4">Type</th>
                                                     <th className="text-center p-4">Qté</th>
                                                     <th className="text-right p-4">P.U. (XPF)</th>
                                                     <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
@@ -770,6 +849,15 @@
                                                 {formData.prestations.map((prestation, index) => (
                                                     <tr key={index} className="border-b border-slate-200">
                                                         <td className="p-4">{prestation.description || '---'}</td>
+                                                        <td className="text-center p-4">
+                                                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                                                prestation.type === 'fourniture' 
+                                                                    ? 'bg-purple-100 text-purple-800' 
+                                                                    : 'bg-green-100 text-green-800'
+                                                            }`}>
+                                                                {prestation.type === 'fourniture' ? 'Fourniture' : 'Service'}
+                                                            </span>
+                                                        </td>
                                                         <td className="text-center p-4">{prestation.quantite}</td>
                                                         <td className="text-right p-4">{(parseFloat(prestation.prixUnitaire) || 0).toLocaleString('fr-FR')}</td>
                                                         <td className="text-right p-4 font-semibold">
@@ -780,41 +868,64 @@
                                             </tbody>
                                         </table>
 
-                                        {/* Totaux */}
+                                        {/* Totaux avec double TVA */}
                                         <div className="flex justify-end mb-8">
-                                            <div className="w-80">
-                                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                                    <span className="text-slate-600">Sous-total HT:</span>
-                                                    <span className="font-semibold">
-                                                        {(formData.prestations.reduce((sum, p) => 
-                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                                                        )).toLocaleString('fr-FR')} XPF
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between py-2 border-b border-slate-200">
-                                                    <span className="text-slate-600">TVA ({formData.tva}%):</span>
-                                                    <span className="font-semibold">
-                                                        {(formData.prestations.reduce((sum, p) => 
-                                                            sum + (parseFloat(p.quantite) || 0) * (parseFloat(p.prixUnitaire) || 0), 0
-                                                        ) * (parseFloat(formData.tva) / 100)).toLocaleString('fr-FR')} XPF
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between py-3 bg-blue-600 text-white px-4 rounded-lg mt-2">
-                                                    <span className="font-bold text-lg">TOTAL TTC:</span>
-                                                    <span className="font-bold text-xl">{(parseFloat(formData.montantTotal) || 0).toLocaleString('fr-FR')} XPF</span>
-                                                </div>
-                                                {parseFloat(formData.accompte) > 0 && (
-                                                    <>
-                                                        <div className="flex justify-between py-2 border-b border-slate-200 mt-2">
-                                                            <span className="text-slate-600">Accompte versé:</span>
-                                                            <span className="font-semibold">-{(parseFloat(formData.accompte) || 0).toLocaleString('fr-FR')} XPF</span>
-                                                        </div>
-                                                        <div className="flex justify-between py-3 bg-green-600 text-white px-4 rounded-lg mt-2">
-                                                            <span className="font-bold text-lg">RESTE À PAYER:</span>
-                                                            <span className="font-bold text-xl">{(parseFloat(formData.resteAPayer) || 0).toLocaleString('fr-FR')} XPF</span>
-                                                        </div>
-                                                    </>
-                                                )}
+                                            <div className="w-96">
+                                                {(() => {
+                                                    const totals = calculateTotals();
+                                                    return (
+                                                        <>
+                                                            {totals.fournituresHT > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">Fournitures HT:</span>
+                                                                        <span className="font-semibold">{totals.fournituresHT.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">TVA Fournitures (16%):</span>
+                                                                        <span className="font-semibold">{totals.tvaFournitures.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            {totals.servicesHT > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">Services HT:</span>
+                                                                        <span className="font-semibold">{totals.servicesHT.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200">
+                                                                        <span className="text-slate-600">TVA Services (13%):</span>
+                                                                        <span className="font-semibold">{totals.tvaServices.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                            <div className="flex justify-between py-2 border-b-2 border-slate-300 font-semibold">
+                                                                <span className="text-slate-800">Total HT:</span>
+                                                                <span>{totals.totalHT.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-2 border-b-2 border-slate-300 font-semibold">
+                                                                <span className="text-slate-800">Total TVA:</span>
+                                                                <span>{totals.totalTVA.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            <div className="flex justify-between py-3 bg-blue-600 text-white px-4 rounded-lg mt-2">
+                                                                <span className="font-bold text-lg">TOTAL TTC:</span>
+                                                                <span className="font-bold text-xl">{totals.totalTTC.toLocaleString('fr-FR')} XPF</span>
+                                                            </div>
+                                                            {parseFloat(formData.accompte) > 0 && (
+                                                                <>
+                                                                    <div className="flex justify-between py-2 border-b border-slate-200 mt-2">
+                                                                        <span className="text-slate-600">Accompte versé:</span>
+                                                                        <span className="font-semibold">-{(parseFloat(formData.accompte) || 0).toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between py-3 bg-green-600 text-white px-4 rounded-lg mt-2">
+                                                                        <span className="font-bold text-lg">RESTE À PAYER:</span>
+                                                                        <span className="font-bold text-xl">{totals.resteAPayer.toLocaleString('fr-FR')} XPF</span>
+                                                                    </div>
+                                                                </>
+                                                            )}
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
 
@@ -835,7 +946,7 @@
                             </div>
                         )}
 
-                        {/* LETTRES AR */}
+                        {/* LETTRES AR - Inchangé */}
                         {activeTab === 'lettreAR' && (
                             <div className="space-y-6">
                                 <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
@@ -940,15 +1051,14 @@
                                     </button>
                                 </div>
 
-                                {/* Aperçu Lettre AR */}
+                                {/* Aperçu Lettre AR - Contenu identique à V9 */}
                                 <div className="bg-white rounded-xl p-8 shadow-xl">
                                     <div className="max-w-3xl mx-auto">
-                                        {/* En-tête */}
                                         <div className="flex justify-between mb-12">
                                             <div>
                                                 <h2 className="text-2xl font-bold text-blue-600">DEPANN'FROID</h2>
                                                 <p className="text-sm text-slate-600">87 70 64 75</p>
-                                                <p className="text-sm text-slate-600">depannfroidmoorea@gmail.com</p>
+                                                <p className="text-sm text-slate-600">depannfroid@mail.pf</p>
                                                 <p className="text-sm text-slate-600">Moorea, Polynésie française</p>
                                             </div>
                                             <div className="text-right">
@@ -957,13 +1067,11 @@
                                             </div>
                                         </div>
 
-                                        {/* Destinataire */}
                                         <div className="mb-12">
                                             <p className="font-semibold">{lettreARData.clientNom || '---'}</p>
                                             <p className="text-slate-600">{lettreARData.clientAdresse || '---'}</p>
                                         </div>
 
-                                        {/* Objet */}
                                         <div className="mb-8">
                                             <p className="font-bold">
                                                 Objet: {lettreARData.typeLettre === 'relance1' && 'Relance pour facture impayée'}
@@ -975,7 +1083,6 @@
                                             </p>
                                         </div>
 
-                                        {/* Corps de lettre selon le type */}
                                         <div className="space-y-4 text-justify mb-8">
                                             {lettreARData.typeLettre === 'relance1' && (
                                                 <>
@@ -1060,14 +1167,12 @@
                                             )}
                                         </div>
 
-                                        {/* Signature */}
                                         <div className="mt-12">
                                             <p className="font-semibold">DEPANN'FROID</p>
                                             <p className="text-slate-600 mt-8">Signature:</p>
                                             <div className="h-20 border-b-2 border-slate-300 mt-2"></div>
                                         </div>
 
-                                        {/* Montants exigibles */}
                                         <div className="mt-12 bg-red-50 border-2 border-red-300 rounded-lg p-6">
                                             <h3 className="font-bold text-red-800 mb-4">MONTANTS EXIGIBLES:</h3>
                                             <div className="space-y-2">
@@ -1092,7 +1197,6 @@
                                             </div>
                                         </div>
 
-                                        {/* Footer légal */}
                                         <div className="mt-8 text-xs text-slate-500 border-t pt-4">
                                             <p className="mb-2"><strong>Références légales :</strong></p>
                                             <p className="mb-1">- Article L. 441-6 du Code de commerce (pénalités de retard)</p>
@@ -1104,7 +1208,7 @@
                             </div>
                         )}
 
-                        {/* SIGNATURE */}
+                        {/* SIGNATURE - Inchangé */}
                         {activeTab === 'signature' && (
                             <div className="space-y-6">
                                 <div className="bg-white/70 backdrop-blur-sm rounded-xl p-6 shadow-xl no-print">
@@ -1151,7 +1255,7 @@
                             </div>
                         )}
 
-                        {/* CGV */}
+                        {/* CGV - Inchangé */}
                         {activeTab === 'cgv' && (
                             <div className="bg-white rounded-xl p-8 shadow-xl">
                                 <div className="max-w-4xl mx-auto">
@@ -1274,7 +1378,7 @@
                                                 <strong>DEPANN'FROID</strong><br />
                                                 Moorea, Polynésie française<br />
                                                 Tél : 87 70 64 75<br />
-                                                Email : depannfroidmoorea@gmail.com
+                                                Email : depannfroid@mail.pf
                                             </p>
                                         </div>
                                     </div>
