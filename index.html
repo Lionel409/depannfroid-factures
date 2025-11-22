@@ -884,67 +884,70 @@ const supprimerFacture = (id) => {
                                     </div>
 
                                     <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
-                                    <p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
-                                    {devisData.prestations.map((prestation, index) => (
-                                        <div key={index} className="grid md:grid-cols-5 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Réf."
-                                                    value={prestation.reference || ''}
-                                                    onChange={(e) => updatePrestationDevis(index, 'reference', e.target.value)}
-                                                    className="w-24 px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={prestation.description}
-                                                    onChange={(e) => updatePrestationDevis(index, 'description', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                    placeholder="Installation chambre froide"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
-                                                <select
-                                                    value={prestation.type}
-                                                    onChange={(e) => updatePrestationDevis(index, 'type', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                >
-                                                    <option value="fourniture">Fourniture (16%)</option>
-                                                    <option value="service">Service (13%)</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
-                                                <input
-                                                    type="number"
-                                                    value={prestation.quantite}
-                                                    onChange={(e) => updatePrestationDevis(index, 'quantite', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                />
-                                            </div>
-                                            <div className="flex gap-2 items-end">
-                                                <div className="flex-1">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={prestation.prixUnitaire}
-                                                        onChange={(e) => updatePrestationDevis(index, 'prixUnitaire', e.target.value)}
-                                                        className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                    />
-                                                </div>
-                                                {devisData.prestations.length > 1 && (
-                                                    <button
-                                                        onClick={() => removePrestationDevis(index)}
-                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+<p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
+{devisData.prestations.map((prestation, index) => (
+    <div key={index} className="grid grid-cols-12 gap-3 mb-4 p-4 bg-slate-50 rounded-lg items-end">
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Réf.</label>
+            <input
+                type="text"
+                placeholder="REF-001"
+                value={prestation.reference || ''}
+                onChange={(e) => updatePrestationDevis(index, 'reference', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
+            />
+        </div>
+        <div className="col-span-3">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+            <input
+                type="text"
+                value={prestation.description}
+                onChange={(e) => updatePrestationDevis(index, 'description', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                placeholder="Installation chambre froide"
+            />
+        </div>
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+            <select
+                value={prestation.type}
+                onChange={(e) => updatePrestationDevis(index, 'type', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            >
+                <option value="fourniture">Fourniture (16%)</option>
+                <option value="service">Service (13%)</option>
+            </select>
+        </div>
+        <div className="col-span-1">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
+            <input
+                type="number"
+                value={prestation.quantite}
+                onChange={(e) => updatePrestationDevis(index, 'quantite', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            />
+        </div>
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
+            <input
+                type="number"
+                value={prestation.prixUnitaire}
+                onChange={(e) => updatePrestationDevis(index, 'prixUnitaire', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            />
+        </div>
+        <div className="col-span-2 flex gap-2">
+            {devisData.prestations.length > 1 && (
+                <button
+                    onClick={() => removePrestationDevis(index)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                >
+                    ✕
+                </button>
+            )}
+        </div>
+    </div>
+))}
                                     
                                     <button
                                         onClick={addPrestationDevis}
@@ -1231,68 +1234,71 @@ const supprimerFacture = (id) => {
                                         </div>
                                     </div>
 
-                                    <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
-                                    <p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
-                                    {formData.prestations.map((prestation, index) => (
-                                        <div key={index} className="grid md:grid-cols-5 gap-4 mb-4 p-4 bg-slate-50 rounded-lg">
-                                            <div className="md:col-span-2">
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Réf."
-                                                    value={prestation.reference || ''}
-                                                    onChange={(e) => updatePrestation(index, 'reference', e.target.value)}
-                                                    className="w-24 px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    value={prestation.description}
-                                                    onChange={(e) => updatePrestation(index, 'description', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                    placeholder="Maintenance système froid"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
-                                                <select
-                                                    value={prestation.type}
-                                                    onChange={(e) => updatePrestation(index, 'type', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                >
-                                                    <option value="fourniture">Fourniture (16%)</option>
-                                                    <option value="service">Service (13%)</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
-                                                <input
-                                                    type="number"
-                                                    value={prestation.quantite}
-                                                    onChange={(e) => updatePrestation(index, 'quantite', e.target.value)}
-                                                    className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                />
-                                            </div>
-                                            <div className="flex gap-2 items-end">
-                                                <div className="flex-1">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
-                                                    <input
-                                                        type="number"
-                                                        value={prestation.prixUnitaire}
-                                                        onChange={(e) => updatePrestation(index, 'prixUnitaire', e.target.value)}
-                                                        className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
-                                                    />
-                                                </div>
-                                                {formData.prestations.length > 1 && (
-                                                    <button
-                                                        onClick={() => removePrestation(index)}
-                                                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                   <h3 className="text-xl font-semibold text-slate-800 mb-4">🛠️ Prestations</h3>
+<p className="text-sm text-slate-600 mb-4">💡 TVA : Fourniture = 16% | Service = 13%</p>
+{formData.prestations.map((prestation, index) => (
+    <div key={index} className="grid grid-cols-12 gap-3 mb-4 p-4 bg-slate-50 rounded-lg items-end">
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Réf.</label>
+            <input
+                type="text"
+                placeholder="REF-001"
+                value={prestation.reference || ''}
+                onChange={(e) => updatePrestation(index, 'reference', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
+            />
+        </div>
+        <div className="col-span-3">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+            <input
+                type="text"
+                value={prestation.description}
+                onChange={(e) => updatePrestation(index, 'description', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+                placeholder="Installation chambre froide"
+            />
+        </div>
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Type</label>
+            <select
+                value={prestation.type}
+                onChange={(e) => updatePrestation(index, 'type', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            >
+                <option value="fourniture">Fourniture (16%)</option>
+                <option value="service">Service (13%)</option>
+            </select>
+        </div>
+        <div className="col-span-1">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Qté</label>
+            <input
+                type="number"
+                value={prestation.quantite}
+                onChange={(e) => updatePrestation(index, 'quantite', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            />
+        </div>
+        <div className="col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">P.U. (XPF)</label>
+            <input
+                type="number"
+                value={prestation.prixUnitaire}
+                onChange={(e) => updatePrestation(index, 'prixUnitaire', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
+            />
+        </div>
+        <div className="col-span-2 flex gap-2">
+            {formData.prestations.length > 1 && (
+                <button
+                    onClick={() => removePrestation(index)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                >
+                    ✕
+                </button>
+            )}
+        </div>
+    </div>
+))}
                                     
                                     <button
                                         onClick={addPrestation}
