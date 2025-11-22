@@ -288,7 +288,7 @@
                 clientAdresse: '',
                 clientEmail: '',
                 clientTelephone: '',
-                prestations: [{ description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }],
+                prestations: [{ reference: '', description: '', type: 'fourniture', quantite: 1, prixUnitaire: '' }],
                 montantTotal: 0,
                 accompte: 0,
                conditions: 'Devis valable 30 jours. Paiement : 30% à la commande, 70% à la livraison.\n\nEn cas de retard de paiement : pénalités de 18% annuel (soit 1,5% par mois) + indemnité forfaitaire de 4 800 XPF.'
@@ -302,7 +302,7 @@
                 clientAdresse: '',
                 clientEmail: '',
                 clientTelephone: '',
-                prestations: [{ description: '', quantite: 1, prixUnitaire: 0, type: 'fourniture' }],
+                prestations: [{ reference: '', description: '', type: 'fourniture', quantite: 1, prixUnitaire: '' }],
                 montantTotal: 0,
                 accompte: 0,
                 resteAPayer: 0
@@ -891,6 +891,13 @@ const supprimerFacture = (id) => {
                                                 <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                                                 <input
                                                     type="text"
+                                                    placeholder="Réf."
+                                                    value={prestation.reference || ''}
+                                                    onChange={(e) => updatePrestationDevis(index, 'reference', e.target.value)}
+                                                    className="w-24 px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
+                                                />
+                                                <input
+                                                    type="text"
                                                     value={prestation.description}
                                                     onChange={(e) => updatePrestationDevis(index, 'description', e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
@@ -1018,18 +1025,20 @@ const supprimerFacture = (id) => {
 
                                         {/* Tableau prestations */}
                                         <table className="w-full mb-8">
-                                            <thead>
-                                                <tr className="bg-blue-600 text-white">
-                                                    <th className="text-left p-4 rounded-tl-lg">Description</th>
-                                                    <th className="text-center p-4">Type</th>
-                                                    <th className="text-center p-4">Qté</th>
-                                                    <th className="text-right p-4">P.U. (XPF)</th>
-                                                    <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
-                                                </tr>
-                                            </thead>
+                                        <thead>
+                                            <tr className="bg-blue-600 text-white">
+                                                <th className="text-left p-4 rounded-tl-lg">Réf.</th>
+                                                <th className="text-left p-4">Description</th>
+                                                <th className="text-center p-4">Type</th>
+                                                <th className="text-center p-4">Qté</th>
+                                                <th className="text-right p-4">P.U. (XPF)</th>
+                                                <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
+                                            </tr>
+                                        </thead>
                                             <tbody>
                                                 {devisData.prestations.map((prestation, index) => (
                                                     <tr key={index} className="border-b border-slate-200">
+                                                        <td className="p-4 text-sm text-slate-500">{prestation.reference || '-'}</td>
                                                         <td className="p-4">{prestation.description || '---'}</td>
                                                         <td className="text-center p-4">
                                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -1230,6 +1239,13 @@ const supprimerFacture = (id) => {
                                                 <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
                                                 <input
                                                     type="text"
+                                                    placeholder="Réf."
+                                                    value={prestation.reference || ''}
+                                                    onChange={(e) => updatePrestation(index, 'reference', e.target.value)}
+                                                    className="w-24 px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500 text-sm"
+                                                />
+                                                <input
+                                                    type="text"
                                                     value={prestation.description}
                                                     onChange={(e) => updatePrestation(index, 'description', e.target.value)}
                                                     className="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:border-blue-500"
@@ -1350,17 +1366,21 @@ const supprimerFacture = (id) => {
                                         {/* Tableau prestations */}
                                         <table className="w-full mb-8">
                                             <thead>
-                                                <tr className="bg-blue-600 text-white">
-                                                    <th className="text-left p-4 rounded-tl-lg">Description</th>
-                                                    <th className="text-center p-4">Type</th>
-                                                    <th className="text-center p-4">Qté</th>
-                                                    <th className="text-right p-4">P.U. (XPF)</th>
-                                                    <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
-                                                </tr>
+                                               <thead>
+                                                    <tr className="bg-blue-600 text-white">
+                                                        <th className="text-left p-4 rounded-tl-lg">Réf.</th>
+                                                        <th className="text-left p-4">Description</th>
+                                                        <th className="text-center p-4">Type</th>
+                                                        <th className="text-center p-4">Qté</th>
+                                                        <th className="text-right p-4">P.U. (XPF)</th>
+                                                        <th className="text-right p-4 rounded-tr-lg">Total (XPF)</th>
+                                                    </tr>
                                             </thead>
+                                           
                                             <tbody>
                                                 {formData.prestations.map((prestation, index) => (
                                                     <tr key={index} className="border-b border-slate-200">
+                                                        <td className="p-4 text-sm text-slate-500">{prestation.reference || '-'}</td>
                                                         <td className="p-4">{prestation.description || '---'}</td>
                                                         <td className="text-center p-4">
                                                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
